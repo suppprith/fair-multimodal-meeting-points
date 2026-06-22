@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+
+# large external inputs (fetch via scripts/DATA.md and scripts/fetch_data.py)
+data/
+tools/
+*.osm.pbf
+*.zip
+*.tif
+*.dat
+
+# run logs and parked figures; the result CSVs in outputs/ are tracked on purpose
+outputs/*.log
+outputs/figures/

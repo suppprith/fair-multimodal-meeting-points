@@ -1,0 +1,15 @@
+# Core (algorithm runs with just these via the Euclidean backend)
+numpy
+pandas
+shapely
+h3>=4.1
+matplotlib
+
+# Stats and analysis
+scipy
+
+# Real-data layers (needed only for the r5py backend and demand weighting)
+geopandas
+rasterio
+# r5py needs a JDK 21 on PATH (current machine has Java 20 -> install Temurin 21)
+r5py

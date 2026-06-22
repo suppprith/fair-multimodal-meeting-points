@@ -1,0 +1,99 @@
+# Fair Multimodal Meeting Points
+
+Reference implementation and reproducible experiments for the paper
+*Minimizing Travel-Time Variance for Fair Multimodal Meeting Points: An H3-Indexed Algorithm*.
+
+Given `N` users who each travel by a possibly different mode (walking, cycling, driving,
+public transit), the algorithm selects a single location that minimises the **variance of
+their multimodal travel times**, so no one carries a much longer trip than the rest. The
+search discretises the region with the [H3](https://h3geo.org/) hexagonal grid and runs
+coarse-to-fine over candidate cells with memoised travel times, reaching the full
+fine-grid optimum while issuing far fewer routing queries.
+
+The same search is metric-agnostic: it also optimises the **Kolm-Pollak equally-distributed-
+equivalent (EDE)** travel time, and a weight on the mean term traces the variance-vs-mean
+Pareto front. The method is applied to three settings: social meeting points, ride-share
+pickup, and demand-weighted micro-fulfilment (dark-store) siting.
+
+## Install
+
+```
+pip install -r requirements.txt
+```
+
+`numpy pandas shapely h3 scipy matplotlib` are enough for the data-free backend.
+`geopandas rasterio r5py` plus a **JDK 21** are needed only for the real-network runs.
+
+## Run without data (Euclidean backend)
+
+Everything runs immediately on a straight-line travel-time backend, which is meant for
+testing and development, not for the reported numbers:
+
+```
+python tests/test_core.py        # unit tests (metrics, EDE, range baseline, optimality)
+python scripts/smoke_test.py     # end-to-end on a synthetic instance
+python scripts/run_significance.py   # 30 instances/scenario, 95% CIs + paired Wilcoxon
+```
+
+## Reproduce the real-network results
+
+1. Fetch the road network and transit feeds (see `scripts/DATA.md`; `scripts/fetch_data.py`
+   automates the open, no-auth downloads). Real runs use OpenStreetMap + GTFS via
+   [r5py](https://r5py.readthedocs.io/) and need a JDK 21.
+2. Run the real-London experiments (each builds the routing network once):
+
+```
+python scripts/run_real_london.py        # social meetup + gamma/Pareto operating point
+python scripts/run_real_rideshare.py     # ride-share walk-access pickup
+python scripts/run_real_darkstore.py     # demand-weighted dark-store siting
+python scripts/run_real_adversarial.py   # river-crossing / mode-mismatch / linear stress tests
+```
+
+Set `N_INSTANCES` to change the number of instances (default 8 for the real runs).
+
+3. Regenerate the paper tables from the result CSVs:
+
+```
+python scripts/make_paper_tables.py      # writes outputs/paper_tables.tex
+```
+
+## Results (`outputs/`)
+
+| File | What it contains |
+| --- | --- |
+| `real_london.csv` | Social meetup, real London multimodal network: every method's variance, Jain, Gini, EDE, mean, max, optimality gap. |
+| `real_london_pareto.csv` | Gamma sweep: the operating point matching min-sum's mean travel time and the variance reduction there. |
+| `real_rideshare.csv` | Ride-share pickup, real walk-access times. |
+| `real_darkstore.csv` | Dark-store siting, real cycling times, demand-weighted metrics (w-variance, courier Gini, within-SLA share, w-EDE). |
+| `real_adversarial.csv` | River-crossing, mode-mismatch, and linear topologies. |
+| `significance.csv`, `significance_tests.csv` | 30-instance synthetic sweep with paired Wilcoxon tests. |
+| `sweep.csv`, `darkstore.csv`, `rideshare.csv` | Euclidean development runs. |
+| `paper_tables.tex` | LaTeX tables generated from the CSVs above. |
+
+## Layout
+
+```
+fairmp/
+  geo.py          haversine, centroid, spread
+  metrics.py      variance, Jain, Gini, Kolm-Pollak EDE, weighted variants, feasibility
+  travel_time.py  Backend ABC; EuclideanBackend; R5Backend (r5py); cached evaluator
+  candidates.py   region bound, H3 polyfill, geometric prefilter, refinement
+  algorithm.py    coarse-to-fine fair meeting point (variance or EDE objective)
+  baselines.py    centroid, weighted centroid, Weiszfeld, min-sum, min-max, min-range,
+                  random, exhaustive (variance and EDE references)
+  scenarios.py    synthetic instance generator
+  darkstore.py    demand-weighted siting + coverage-max baseline
+  runner.py       harness: run every method, collect metrics, optimality gap
+  sweep.py        multi-instance sweeps, gamma/Pareto, resolution and size scaling
+scripts/          runnable experiments + data fetch + table generation
+tests/test_core.py
+```
+
+The travel-time backend is abstract. `EuclideanBackend` needs no data; `R5Backend` and
+`PrecomputedBackend` supply real OSM + GTFS times via r5py. The algorithm, baselines, and
+metrics are identical across backends, so the optimality gap and routing-query counts are
+backend-independent and the real backend only changes the travel-time values.
+
+## License
+
+MIT, see `LICENSE`.
