@@ -13,9 +13,10 @@ yet; this is the checklist.
 
 ## London
 
-- **Buses (GTFS):** Bus Open Data Service, https://data.bus-data.dft.gov.uk
-- **Tube / rail (GTFS):** Mobility Database, https://mobilitydatabase.org (search "London")
-  -> combine into `data/london/gtfs/`.
+- **Public transit (GTFS):** Bus Open Data Service London region feed,
+  https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/london/ . This one feed
+  already bundles the Underground, DLR, tram, ferry, and bus, so no separate tube/rail
+  download is needed. -> `data/london/gtfs/`.
 - **Emergency incidents (real):** London Fire Brigade Incident Records,
   https://data.london.gov.uk/dataset/london-fire-brigade-incident-records
   -> `data/london/incidents.csv`.

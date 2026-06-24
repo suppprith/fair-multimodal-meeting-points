@@ -21,10 +21,11 @@ AUTO = [
 
 MANUAL = """
 Manual steps (large + crop, account, or browser-only):
-  - Bengaluru OSM: Geofabrik asia/india/southern-zone-latest.osm.pbf (554 MB),
-    crop to the Bengaluru bbox -> data/bengaluru/network.osm.pbf
-  - London tube/rail GTFS (optional; buses already fetched): Mobility Database "London".
-  - Bengaluru metro GTFS (optional): TUMI Datahub "GTFS: Bengaluru".
+  - Bengaluru OSM: download karnataka.osm.pbf from osm.fr (extracts/asia/india), then
+    run scripts/crop_bengaluru.py -> data/bengaluru/blr_city.osm.pbf
+  - London tube/rail GTFS: already bundled in the London region feed above; no separate
+    download needed.
+  - Bengaluru metro GTFS (synthetic): built by scripts/build_metro_gtfs.py.
   - WorldPop rasters (siting scenario): worldpop.org -> data/<city>/worldpop.tif
   - London Fire incidents (emergency, real): London Datastore -> data/london/incidents.csv
 """
