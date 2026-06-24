@@ -24,6 +24,30 @@ pip install -r requirements.txt
 `numpy pandas shapely h3 scipy matplotlib` are enough for the data-free backend.
 `geopandas rasterio r5py` plus a **JDK 21** are needed only for the real-network runs.
 
+A `Dockerfile` (Java 21 + Python) is included for a reproducible environment:
+
+```
+docker build -t fairmp . && docker run --rm fairmp   # runs the unit tests
+```
+
+## Quickstart
+
+Compute a fair meeting point for a synthetic group on the data-free backend:
+
+```python
+from fairmp.scenarios import sample_origins, assign_modes
+from fairmp.algorithm import Params, fair_meeting_point
+from fairmp.travel_time import EuclideanBackend, CachedEvaluator
+
+origins = sample_origins("london", 5, seed=0)   # five users in a local area
+modes = assign_modes(5, "mixed", seed=0)         # one mode each
+ev = CachedEvaluator(EuclideanBackend())
+best, runners_up, _, _ = fair_meeting_point(origins, modes, ev, Params())
+print(best.point, [round(t, 1) for t in best.times])
+```
+
+Swap `EuclideanBackend()` for `R5Backend(osm, gtfs)` to use real travel times.
+
 ## Run without data (Euclidean backend)
 
 Everything runs immediately on a straight-line travel-time backend, which is meant for
