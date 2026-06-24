@@ -66,6 +66,18 @@ def gini(times: list[float]) -> float:
     return (2 * cum) / (n * s) - (n + 1) / n
 
 
+def theil(times: list[float]) -> float:
+    """Theil index of travel times; 0 when all equal, higher when more unequal."""
+    r = _reachable(times)
+    n = len(r)
+    if n == 0:
+        return math.inf
+    mu = sum(r) / n
+    if mu <= 0:
+        return 0.0
+    return sum((t / mu) * math.log(t / mu) for t in r if t > 0) / n
+
+
 def maxmin_ratio(times: list[float]) -> float:
     r = _reachable(times)
     if not r:
@@ -188,6 +200,7 @@ def summarize(times: list[float], n: int, t_max: float, gamma: float = 0.0) -> d
         "spread": spread(times),
         "jain": jain(times),
         "gini": gini(times),
+        "theil": theil(times),
         "ede": kolm_pollak_ede(times),
         "maxmin": maxmin_ratio(times),
         "feasible": feasible(times, n, t_max),

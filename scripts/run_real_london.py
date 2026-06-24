@@ -91,7 +91,12 @@ def main():
     print("network ready")
     today = dt.date.today()
     wed = today + dt.timedelta((2 - today.weekday()) % 7 + 7)
-    departure = dt.datetime(wed.year, wed.month, wed.day, 8, 30)
+    # DEPARTURE_HOUR lets us probe peak (default 08:30) vs off-peak; OUT_TAG keeps the
+    # two result files separate.
+    hour = int(os.environ.get("DEPARTURE_HOUR", "8"))
+    minute = int(os.environ.get("DEPARTURE_MIN", "30"))
+    departure = dt.datetime(wed.year, wed.month, wed.day, hour, minute)
+    tag = os.environ.get("OUT_TAG", "")
     params = Params(coarse_res=8, fine_res=9, k_c=300, k_refine=10, t_max=120.0, gamma=0.0)
 
     n_instances = int(os.environ.get("N_INSTANCES", "3"))
@@ -115,14 +120,15 @@ def main():
 
     df = pd.DataFrame(rows)
     os.makedirs("outputs", exist_ok=True)
-    df.to_csv("outputs/real_london.csv", index=False)
-    cols = ["variance", "jain", "gini", "ede", "mean", "max", "feasible", "opt_gap"]
-    print("\nREAL London social meetup (mean over instances):")
+    df.to_csv(f"outputs/real_london{tag}.csv", index=False)
+    cols = ["variance", "jain", "gini", "theil", "ede", "mean", "max", "feasible", "opt_gap"]
+    cols = [c for c in cols if c in df.columns]
+    print(f"\nREAL London social meetup (departure {hour:02d}:{minute:02d}, mean over instances):")
     print(df.groupby("method")[cols].mean(numeric_only=True).round(3).sort_values("variance").to_string())
 
     if pareto_rows:
         pdf = pd.DataFrame(pareto_rows)
-        pdf.to_csv("outputs/real_london_pareto.csv", index=False)
+        pdf.to_csv(f"outputs/real_london_pareto{tag}.csv", index=False)
         print("\nPareto matched-mean (<=5% mean budget vs min-sum):")
         print(pdf.round(2).to_string(index=False))
         print(f"mean variance reduction at matched mean: {pdf['variance_reduction_pct'].mean():.0f}%")
