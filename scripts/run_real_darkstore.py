@@ -85,9 +85,18 @@ def main():
     sla = 10.0
 
     n_instances = int(os.environ.get("N_INSTANCES", "3"))
+    n_cells = int(os.environ.get("DEMAND_CELLS", "40"))
+    # WORLDPOP=1 draws demand from the real WorldPop population raster (inner-London
+    # service area) instead of the synthetic generator: real-demand, larger-scale siting.
+    use_worldpop = bool(os.environ.get("WORLDPOP"))
+    wp_raster = os.path.join(ROOT, "data", "london", "worldpop_gbr.tif")
+    wp_bbox = (51.48, -0.16, 51.54, -0.06)
     rows = []
     for seed in range(n_instances):
-        demand, weights = darkstore.sample_demand("london", 40, seed=seed)
+        if use_worldpop:
+            demand, weights = darkstore.sample_demand_worldpop(wp_raster, wp_bbox, n_cells, seed=seed)
+        else:
+            demand, weights = darkstore.sample_demand("london", n_cells, seed=seed)
         cands = candidates_for(demand, weights, 8, 9)
         print(f"seed {seed}: {len(cands)} candidates, r5 cycling matrix...")
         pre = precompute(r5, demand, "cycling", cands, departure)

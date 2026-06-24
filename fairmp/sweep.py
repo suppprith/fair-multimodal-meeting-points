@@ -66,9 +66,11 @@ def pareto_matched_mean(origins, modes, backend, gammas=(0, 0.5, 1, 2, 4, 8, 16,
     front = gamma_sweep(origins, modes, backend, gammas, p)
     ev = CachedEvaluator(backend)
     mpt = min_sum_baseline(origins, modes, ev, res=fine_res)
+    if mpt is None or not front:
+        return front, {"mean": math.inf, "variance": math.inf}, None
     mtimes = [ev.effective(o, mpt, m) for o, m in zip(origins, modes)]
     ref = {"mean": metrics.mean_time(mtimes), "variance": metrics.variance(mtimes)}
-    if not front or not math.isfinite(ref["mean"]):
+    if not math.isfinite(ref["mean"]):
         return front, ref, None
     budget = ref["mean"] * (1.0 + mean_tol)
     within = [f for f in front if f["mean"] <= budget] or [min(front, key=lambda f: f["mean"])]
