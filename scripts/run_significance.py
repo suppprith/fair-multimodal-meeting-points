@@ -2,7 +2,7 @@
 Wilcoxon signed-rank tests of our method against every baseline.
 
 Backend is Euclidean (data-free, deterministic) so the test can run over 30
-instances per scenario quickly; it establishes that the *ranking* is robust, while
+instances per scenario quickly; it establishes that the *ranking* holds, while
 the real-network runs (run_real_london.py) confirm the magnitude on real travel
 times. Variance objective is tested via "ours"; the EDE objective via "ours_ede".
 

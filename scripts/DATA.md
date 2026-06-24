@@ -1,4 +1,4 @@
-# Data download — London and Bengaluru
+# Data download: London and Bengaluru
 
 Full rationale in `../../data-sources.md`. Put files under `data/london/` and
 `data/bengaluru/`. Record source URL and date for each. None of this is fetched

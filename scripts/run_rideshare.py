@@ -46,7 +46,7 @@ def main():
     df.to_csv("outputs/rideshare.csv", index=False)
 
     cols = ["variance", "spread", "mean", "max", "jain", "opt_gap"]
-    print("Ride-share pickup — rider WALK (access) time to the shared pickup, mean over instances:")
+    print("Ride-share pickup: rider WALK (access) time to the shared pickup, mean over instances:")
     print(df.groupby("method")[cols].mean().round(2).sort_values("variance").to_string())
 
 
