@@ -1,38 +1,4 @@
-"""Heuristic optimality gap (paper critique 5): construct an adversarial instance on which
-coarse-to-fine search returns a NONZERO gap against exhaustive fine-grid search, and
-characterize when that happens.
 
-The paper reports a zero gap on every real instance. That is a measurement, not a
-guarantee, and an algorithms reviewer will (rightly) ask when the coarse-to-fine heuristic
-can fail. The honest answer is: it fails when the refine budget is starved and the global
-fine optimum lies under a coarse cell whose own centroid scores poorly, so that coarse cell
-is never refined. This script
-
-  1. searches random instances under a deliberately starved refine budget (small k_refine,
-     coarse coarse_res) to find one with a strictly positive gap, then
-  2. characterizes recovery: holding the instance fixed, it sweeps k_refine and shows the
-     gap closing back to zero as the budget grows, and
-  3. reports how often a positive gap occurs across many instances as a function of k_refine,
-
-so the heuristic's failure mode is bounded empirically rather than assumed away.
-
-The characterization that emerges: the gap is largest when the refine budget is starved
-(k_refine=1). Raising the budget removes most of it at once, but a residual can survive when
-the coarse grid is so coarse that only a handful of cells cover the region and the global
-optimum falls in the SEAM between them, which the children-plus-ring-1 of the refined cells
-never reach. That residual seam gap closes when the coarse grid is made finer (more cells,
-so the optimum's neighbourhood is sampled) or the refinement ring is widened. In absolute
-terms the gaps occur on near-zero-variance instances and are sub-minute in standard
-deviation, the same rare-instance regime noted for the synthetic sweep.
-
-Backend is Euclidean (data-free); the optimality gap depends only on which candidate cells
-are evaluated, not on the source of the travel times, so it carries to the real network.
-
-Run:  python scripts/run_heuristic_gap.py
-Out:  outputs/heuristic_gap_instance.csv     (recovery vs refine budget k_refine)
-      outputs/heuristic_gap_resolution.csv   (residual seam gap vs coarse_res and ring)
-      outputs/heuristic_gap_frequency.csv    (gap frequency vs k_refine over many instances)
-"""
 from __future__ import annotations
 
 import os
@@ -40,26 +6,22 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pandas as pd  # noqa: E402
+import pandas as pd
 
-from fairmp import metrics  # noqa: E402
-from fairmp.algorithm import Params, fair_meeting_point  # noqa: E402
-from fairmp.baselines import exhaustive_variance  # noqa: E402
-from fairmp.scenarios import assign_modes, sample_origins  # noqa: E402
-from fairmp.travel_time import CachedEvaluator, EuclideanBackend  # noqa: E402
+from fairmp import metrics
+from fairmp.algorithm import Params, fair_meeting_point
+from fairmp.baselines import exhaustive_variance
+from fairmp.scenarios import assign_modes, sample_origins
+from fairmp.travel_time import CachedEvaluator, EuclideanBackend
 
-# Starved search: a coarse coarse grid plus a small refine budget is the regime where
-# coarse-to-fine can miss. fine_res matches the exhaustive baseline so the gap is well
-# defined and non-negative (our candidates are a subset of the fine grid).
 COARSE_RES = 6
 FINE_RES = 9
 K_C = 400
 T_MAX = 240.0
 STARVED_K_REFINE = 1
 
-
 def gap_for(origins, modes, backend, k_refine, k_c=K_C, coarse_res=COARSE_RES, ring=1):
-    """Optimality gap (our variance - exhaustive variance, relative) at fine_res."""
+
     p = Params(coarse_res=coarse_res, fine_res=FINE_RES, k_c=k_c, k_refine=k_refine,
                ring=ring, t_max=T_MAX)
     ev = CachedEvaluator(backend)
@@ -72,9 +34,8 @@ def gap_for(origins, modes, backend, k_refine, k_c=K_C, coarse_res=COARSE_RES, r
     gap = (ours - xv) / xv if xv > 0 else 0.0
     return gap, ours, xv, ev.calls
 
-
 def find_gap_instance(backend):
-    """First instance (over cities/sizes/seeds) with a strictly positive starved gap."""
+
     best = None
     for city in ["london", "bengaluru"]:
         for n in [5, 6, 7, 8]:
@@ -87,11 +48,10 @@ def find_gap_instance(backend):
                     cand = (gap, city, n, seed, origins, modes, ours, xv)
                     if best is None or gap > best[0]:
                         best = cand
-                    # a clear gap (>5%) is illustrative enough; stop early
+
                     if gap > 0.05:
                         return cand
     return best
-
 
 def main():
     os.makedirs("outputs", exist_ok=True)
@@ -112,11 +72,8 @@ def main():
     import math
 
     def std_gap_min(o, x):
-        return math.sqrt(o) - math.sqrt(x)  # absolute gap in travel-time std-dev (minutes)
+        return math.sqrt(o) - math.sqrt(x)
 
-    # 1. Budget recovery: hold the instance fixed, grow the refine budget. The starved
-    #    gap collapses at once, then plateaus at the residual seam gap (budget alone
-    #    cannot close it because too few coarse cells cover the region).
     rec = []
     for kr in [1, 2, 3, 5, 8, 10, 15, 20, 30]:
         g, o, x, calls = gap_for(origins, modes, backend, kr)
@@ -126,8 +83,6 @@ def main():
     rec_df = pd.DataFrame(rec)
     rec_df.to_csv("outputs/heuristic_gap_instance.csv", index=False)
 
-    # 2. Seam-gap recovery: with the budget no longer starved (k_refine=20), the residual
-    #    gap closes when the coarse grid is made finer or the refinement ring is widened.
     seam = []
     for cr in [5, 6, 7, 8]:
         g, o, x, calls = gap_for(origins, modes, backend, 20, coarse_res=cr, ring=1)
@@ -140,8 +95,6 @@ def main():
     seam_df = pd.DataFrame(seam)
     seam_df.to_csv("outputs/heuristic_gap_resolution.csv", index=False)
 
-    # 3. Frequency: how often does a positive gap occur as k_refine grows, over many
-    #    instances? This bounds the failure mode empirically.
     freq = []
     for kr in [1, 2, 3, 5, 10]:
         n_pos, gaps, abs_gaps = 0, [], []
@@ -176,7 +129,6 @@ def main():
     print("\nAt the paper's default k_refine=10, positive-gap rate: %.1f%%, max abs gap %.3f min std"
           % (freq_df.loc[freq_df.k_refine == 10, "positive_gap_pct"].iloc[0],
              freq_df.loc[freq_df.k_refine == 10, "max_abs_gap_std_min"].iloc[0]))
-
 
 if __name__ == "__main__":
     main()

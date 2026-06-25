@@ -1,9 +1,4 @@
-"""A clear fairness figure: each person's travel time, centroid vs fair point.
 
-The story should be obvious at a glance: centroid leaves one person travelling far
-longer (uneven bars); the fair point evens the bars out. Dev data (Euclidean
-backend) for now; identical code renders on real r5py travel times later.
-"""
 from __future__ import annotations
 
 import os
@@ -11,21 +6,20 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import matplotlib  # noqa: E402
+import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
+import matplotlib.pyplot as plt
+import numpy as np
 
-from fairmp import metrics  # noqa: E402
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.runner import solve_all  # noqa: E402
-from fairmp.scenarios import assign_modes, sample_origins  # noqa: E402
-from fairmp.travel_time import EuclideanBackend  # noqa: E402
+from fairmp import metrics
+from fairmp.algorithm import Params
+from fairmp.runner import solve_all
+from fairmp.scenarios import assign_modes, sample_origins
+from fairmp.travel_time import EuclideanBackend
 
 OUT = "outputs/figures"
 os.makedirs(OUT, exist_ok=True)
-
 
 def main():
     n = 6
@@ -54,7 +48,6 @@ def main():
     fig.tight_layout()
     fig.savefig(f"{OUT}/fig_fairness_bars.png", dpi=150)
     print("wrote", f"{OUT}/fig_fairness_bars.png")
-
 
 if __name__ == "__main__":
     main()

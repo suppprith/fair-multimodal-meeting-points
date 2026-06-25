@@ -1,16 +1,4 @@
-"""Real Bengaluru social-meetup numbers: second city of contrasting topology.
 
-Bengaluru is sprawling with an organic street layout, against London's compact, mature
-multimodal network. Road network from OpenStreetMap (Karnataka extract, which contains
-Bengaluru). This run uses road modes only (driving, cycling, walking) as a deliberate
-scope choice, so the second city isolates the contrast in street topology from London's
-multimodal effects; the BMTC bus GTFS in the repo is not routed here. Same pipeline as
-run_real_london.py: build the r5 network once, precompute every user's travel time to all
-candidates, then run our method and the baselines as lookups.
-
-Run:  python scripts/run_real_bengaluru.py
-Out:  outputs/real_bengaluru.csv, outputs/real_bengaluru_pareto.csv
-"""
 from __future__ import annotations
 
 import datetime as dt
@@ -28,33 +16,26 @@ if _jdk:
     os.environ["PATH"] = os.path.join(_jdk[0], "bin") + os.pathsep + os.environ.get("PATH", "")
 os.environ.setdefault("JAVA_TOOL_OPTIONS", "-Xmx4g")
 
-import geopandas as gpd  # noqa: E402
-import pandas as pd  # noqa: E402
-from shapely.geometry import Point  # noqa: E402
+import geopandas as gpd
+import pandas as pd
+from shapely.geometry import Point
 
-from fairmp import baselines  # noqa: E402
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.candidates import polyfill_centroids, region_polygon  # noqa: E402
-from fairmp.runner import run_instance  # noqa: E402
-import fairmp.scenarios as scenarios  # noqa: E402
-from fairmp.scenarios import CITY_BBOX, assign_modes, sample_origins  # noqa: E402
+from fairmp import baselines
+from fairmp.algorithm import Params
+from fairmp.candidates import polyfill_centroids, region_polygon
+from fairmp.runner import run_instance
+import fairmp.scenarios as scenarios
+from fairmp.scenarios import CITY_BBOX, assign_modes, sample_origins
 
-# Sample groups within Bengaluru's dense urban core rather than the full administrative
-# bbox whose rural fringe is poorly connected.
 CITY_BBOX["bengaluru"] = (12.92, 77.55, 13.02, 77.67)
-# Bengaluru groups use road modes only, a deliberate scope choice so the second city
-# isolates the contrast in road-network topology from London's multimodal effects. The
-# BMTC bus GTFS is present in the repo but not routed for this run.
+
 scenarios.MODES = ["driving", "walking", "cycling"]
-from fairmp.sweep import pareto_matched_mean  # noqa: E402
-from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend  # noqa: E402
+from fairmp.sweep import pareto_matched_mean
+from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend
 
 OSM = os.path.join(ROOT, "data", "bengaluru", "blr_city.osm.pbf")
-# Road-only second city: build the street network from the Bengaluru city OSM extract
-# (the whole-state Karnataka extract would not build a routable network). The open
-# Bengaluru transit feeds did not route in the engine, so transit is excluded here.
-GTFS = []
 
+GTFS = []
 
 def candidates_for(origins, modes, coarse, fine):
     region = region_polygon(origins)
@@ -67,7 +48,6 @@ def candidates_for(origins, modes, coarse, fine):
                baselines.geometric_median(origins, modes)):
         pts[(round(bp.lat, 6), round(bp.lng, 6))] = bp
     return list(pts.values())
-
 
 def precompute(r5, origins, modes, cands, departure):
     r5py = r5._r5py
@@ -96,7 +76,6 @@ def precompute(r5, origins, modes, cands, departure):
             t = r.travel_time
             pre.put(mode, o, c, float(t) if t == t else float("inf"))
     return pre
-
 
 def main():
     print("loading Bengaluru network (Karnataka OSM + BMTC + synthetic metro)...")
@@ -136,7 +115,6 @@ def main():
         pdf = pd.DataFrame(pareto_rows)
         pdf.to_csv("outputs/real_bengaluru_pareto.csv", index=False)
         print(f"\nPareto matched-mean: mean variance reduction {pdf['variance_reduction_pct'].mean():.0f}%")
-
 
 if __name__ == "__main__":
     main()

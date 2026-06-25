@@ -1,15 +1,4 @@
-"""Real ride-share pickup on the London road/path network (riders walk to a shared
-pickup). Replaces the Euclidean dev run with real r5py WALK times.
 
-Riders are placed in a small local area and all walk to one shared pickup; we minimise
-the variance of their walk (access) time so no rider bears a much longer walk than the
-others. Builds the r5 network once (reuses the cached .dat from run_real_london), then
-precomputes every rider's real walk time to all candidates and runs our method and the
-baselines as lookups.
-
-Run:  python scripts/run_real_rideshare.py
-Out:  outputs/real_rideshare.csv
-"""
 from __future__ import annotations
 
 import datetime as dt
@@ -26,21 +15,20 @@ if _jdk:
     os.environ["PATH"] = os.path.join(_jdk[0], "bin") + os.pathsep + os.environ.get("PATH", "")
 os.environ.setdefault("JAVA_TOOL_OPTIONS", "-Xmx4g")
 
-import geopandas as gpd  # noqa: E402
-import pandas as pd  # noqa: E402
-from shapely.geometry import Point  # noqa: E402
+import geopandas as gpd
+import pandas as pd
+from shapely.geometry import Point
 
-from fairmp import baselines  # noqa: E402
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.candidates import polyfill_centroids, region_polygon  # noqa: E402
-from fairmp.runner import run_instance  # noqa: E402
-from fairmp.scenarios import assign_modes, sample_origins  # noqa: E402
-from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend  # noqa: E402
+from fairmp import baselines
+from fairmp.algorithm import Params
+from fairmp.candidates import polyfill_centroids, region_polygon
+from fairmp.runner import run_instance
+from fairmp.scenarios import assign_modes, sample_origins
+from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend
 
 OSM = os.path.join(ROOT, "data", "london", "network.osm.pbf")
 GTFS = [os.path.join(ROOT, "data", "london", "gtfs", "london_bus.zip")]
 WALK = ["walking"]
-
 
 def candidates_for(riders, modes, coarse, fine):
     region = region_polygon(riders)
@@ -48,13 +36,12 @@ def candidates_for(riders, modes, coarse, fine):
     for res in (coarse, fine):
         for _c, p in polyfill_centroids(region, res):
             pts[(round(p.lat, 6), round(p.lng, 6))] = p
-    # geometric baselines are off-grid points; include them so they get real walk times
+
     for bp in (baselines.geometric_centroid(riders, modes),
                baselines.weighted_centroid(riders, modes),
                baselines.geometric_median(riders, modes)):
         pts[(round(bp.lat, 6), round(bp.lng, 6))] = bp
     return list(pts.values())
-
 
 def precompute(r5, riders, cands, departure):
     r5py = r5._r5py
@@ -77,7 +64,6 @@ def precompute(r5, riders, cands, departure):
         t = r.travel_time
         pre.put("walking", o, c, float(t) if t == t else float("inf"))
     return pre
-
 
 def main():
     print("loading London network (cached .dat if present)...")
@@ -106,7 +92,6 @@ def main():
     cols = ["variance", "spread", "ede", "mean", "max", "jain", "opt_gap"]
     print("\nREAL London ride-share pickup (rider WALK access time, mean over instances):")
     print(df.groupby("method")[cols].mean(numeric_only=True).round(2).sort_values("variance").to_string())
-
 
 if __name__ == "__main__":
     main()

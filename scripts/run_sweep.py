@@ -1,10 +1,4 @@
-"""Run a multi-instance sweep and write outputs/sweep.csv.
 
-Uses the data-free Euclidean backend by default. Swap in R5Backend once data and
-a JDK 21 are in place (see scripts/DATA.md).
-
-Run:  python scripts/run_sweep.py
-"""
 from __future__ import annotations
 
 import os
@@ -12,12 +6,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pandas as pd  # noqa: E402
+import pandas as pd
 
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.sweep import run_sweep  # noqa: E402
-from fairmp.travel_time import EuclideanBackend  # noqa: E402
-
+from fairmp.algorithm import Params
+from fairmp.sweep import run_sweep
+from fairmp.travel_time import EuclideanBackend
 
 def main():
     backend = EuclideanBackend()
@@ -37,7 +30,6 @@ def main():
     print("wrote outputs/sweep.csv", df.shape)
     agg = df.groupby("method")[["variance", "jain", "gini", "opt_gap", "routing_calls"]].mean().round(3)
     print(agg.sort_values("variance").to_string())
-
 
 if __name__ == "__main__":
     main()

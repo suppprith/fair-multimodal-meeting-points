@@ -1,13 +1,4 @@
-"""Fetch the auto-downloadable open data for the four evaluation cities
-(London, Bengaluru, Tokyo, Bay Area).
 
-Run:  python scripts/fetch_data.py
-
-Covers the no-account, direct-URL sources. The rest (large extracts, account-gated,
-or browser-only) are printed as manual steps at the end. See ../../data-sources.md.
-URLs are best-effort and should be re-verified before a run; failures are reported
-per item, not fatal.
-"""
 from __future__ import annotations
 
 import os
@@ -20,10 +11,9 @@ AUTO = [
     ("london/network.osm.pbf", "https://download.bbbike.org/osm/bbbike/London/London.osm.pbf"),
     ("london/gtfs/london_bus.zip", "https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/london/"),
     ("bengaluru/gtfs/bmtc.zip", "https://raw.githubusercontent.com/Vonter/bmtc-gtfs/main/gtfs/bmtc.zip"),
-    # Tokyo: OSM extract auto; transit (ODPT) is account-gated -> manual below.
+
     ("tokyo/network.osm.pbf", "https://download.bbbike.org/osm/bbbike/Tokyo/Tokyo.osm.pbf"),
-    # Bay Area: OSM extract plus the two largest agencies that publish open, no-account GTFS
-    # (BART rail + SFMTA Muni). The 511 regional all-agency feed is token-gated -> manual.
+
     ("bayarea/network.osm.pbf", "https://download.bbbike.org/osm/bbbike/SanFrancisco/SanFrancisco.osm.pbf"),
     ("bayarea/gtfs/bart.zip", "https://www.bart.gov/dev/schedules/google_transit.zip"),
     ("bayarea/gtfs/muni.zip", "https://gtfs.sfmta.com/transitdata/google_transit.zip"),
@@ -46,7 +36,6 @@ Manual steps (large + crop, account, or browser-only):
   - London Fire incidents (emergency, real): London Datastore -> data/london/incidents.csv
 """
 
-
 def fetch(rel: str, url: str):
     dest = os.path.join(DATA, rel)
     if os.path.exists(dest) and os.path.getsize(dest) > 0:
@@ -57,15 +46,13 @@ def fetch(rel: str, url: str):
     urllib.request.urlretrieve(url, dest)
     print("        ", round(os.path.getsize(dest) / 1e6, 1), "MB")
 
-
 def main():
     for rel, url in AUTO:
         try:
             fetch(rel, url)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print("FAILED  ", rel, "->", e)
     print(MANUAL)
-
 
 if __name__ == "__main__":
     main()

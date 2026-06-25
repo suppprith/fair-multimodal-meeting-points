@@ -1,7 +1,4 @@
-"""Multi-instance sweeps and the special sweeps the figures need (gamma Pareto,
-H3-resolution convergence, scaling with N). Backend-agnostic: pass Euclidean now,
-r5py later.
-"""
+
 from __future__ import annotations
 
 import math
@@ -16,17 +13,14 @@ from .runner import run_instance
 from .scenarios import assign_modes, sample_origins
 from .travel_time import CachedEvaluator
 
-
 def make_instance(city, n, mix="mixed", spread="clustered", seed=0, clusters=1, cluster_sd_deg=0.03):
     origins = sample_origins(city, n, seed=seed, spread=spread, clusters=clusters, cluster_sd_deg=cluster_sd_deg)
     modes = assign_modes(n, mix=mix, seed=seed)
     return origins, modes
 
-
 def run_sweep(backend, cities, ns, mixes, seeds, params=None, fine_res=9,
               spread="clustered", clusters=1, cluster_sd_deg=0.03):
-    """Cartesian sweep over cities x N x mode-mix x seed. Returns a list of metric
-    rows, each tagged with its config."""
+
     rows = []
     for city in cities:
         for n in ns:
@@ -38,9 +32,8 @@ def run_sweep(backend, cities, ns, mixes, seeds, params=None, fine_res=9,
                         rows.append(r)
     return rows
 
-
 def gamma_sweep(origins, modes, backend, gammas, base_params=None):
-    """Trace the (mean, variance) Pareto front as gamma varies (Eq 9)."""
+
     out = []
     for g in gammas:
         p = replace(base_params or Params(), gamma=g)
@@ -51,17 +44,9 @@ def gamma_sweep(origins, modes, backend, gammas, base_params=None):
         out.append({"gamma": g, "variance": metrics.variance(best.times), "mean": metrics.mean_time(best.times)})
     return out
 
-
 def pareto_matched_mean(origins, modes, backend, gammas=(0, 0.5, 1, 2, 4, 8, 16, 32, 64),
                         base_params=None, fine_res=9, mean_tol=0.05):
-    """Pareto operating point that matches min-sum's average travel time within a budget.
 
-    Sweeps gamma to trace the (mean, variance) front, then, among front points whose mean
-    is within mean_tol of the min-sum baseline's mean, reports the one with the lowest
-    variance. Because our candidate set is a subset of the fine grid that min-sum searches,
-    our mean cannot dip below min-sum's; allowing a small mean budget converts our only
-    efficiency loss into a dominance statement: at essentially min-sum's average travel
-    time, our variance is X% lower (plan item 2). Returns (front, reference, op)."""
     p = base_params or Params()
     front = gamma_sweep(origins, modes, backend, gammas, p)
     ev = CachedEvaluator(backend)
@@ -80,9 +65,8 @@ def pareto_matched_mean(origins, modes, backend, gammas=(0, 0.5, 1, 2, 4, 8, 16,
                                     if ref["variance"] else float("nan"))
     return front, ref, op
 
-
 def resolution_sweep(origins, modes, backend, fine_reses, base_params=None):
-    """Our variance and the optimality gap vs exhaustive, as fine resolution varies."""
+
     out = []
     for fr in fine_reses:
         p = replace(base_params or Params(), fine_res=fr)
@@ -100,9 +84,8 @@ def resolution_sweep(origins, modes, backend, fine_reses, base_params=None):
                     "runtime_s": dt, "routing_calls": ev.calls})
     return out
 
-
 def size_sweep(backend, city, ns, seeds, base_params=None, fine_res=9):
-    """Our runtime, routing-query count, and optimality gap as N grows (averaged over seeds)."""
+
     out = []
     for n in ns:
         runtimes, calls, gaps = [], [], []

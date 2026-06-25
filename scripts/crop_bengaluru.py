@@ -1,10 +1,4 @@
-"""Crop the Karnataka OSM extract down to a Bengaluru city bounding box so the routing
-engine can build a working street network (the whole-state extract is too large to
-route reliably). One-off preprocessing step; needs pyosmium (pip install osmium).
 
-In:  data/bengaluru/network.osm.pbf   (Karnataka, from osm.fr)
-Out: data/bengaluru/blr_city.osm.pbf  (Bengaluru bbox)
-"""
 import os
 import sys
 
@@ -14,9 +8,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "data", "bengaluru", "network.osm.pbf")
 DST = os.path.join(ROOT, "data", "bengaluru", "blr_city.osm.pbf")
 
-# min_lon, min_lat, max_lon, max_lat  (greater Bengaluru, ~33 km box)
 BBOX = (77.45, 12.85, 77.75, 13.15)
-
 
 class Collect(osmium.SimpleHandler):
     def __init__(self):
@@ -36,7 +28,6 @@ class Collect(osmium.SimpleHandler):
         if inbox:
             self.keep_ways.add(w.id)
             self.keep_nodes.update(refs)
-
 
 def main():
     print("pass 1: finding ways and nodes inside the Bengaluru box...")
@@ -62,7 +53,6 @@ def main():
     Write().apply_file(SRC)
     writer.close()
     print(f"wrote {DST} ({os.path.getsize(DST) / 1e6:.0f} MB)")
-
 
 if __name__ == "__main__":
     main()

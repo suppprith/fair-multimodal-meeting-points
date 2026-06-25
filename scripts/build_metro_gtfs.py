@@ -1,14 +1,4 @@
-"""Synthesize a Namma Metro GTFS from open station/line geometry.
 
-No clean open Namma Metro GTFS exists, so we build one from the station and line
-geometry in geohacker/namma-metro plus realistic metro speed, dwell, and headway.
-The result is labelled synthetic in the paper. Stations are assigned to a line by
-proximity and ordered by projection along the line; service is encoded with
-frequencies.txt (headway-based), which R5 / r5py supports.
-
-Run:  python scripts/build_metro_gtfs.py
-Out:  data/bengaluru/gtfs/namma_metro.zip
-"""
 from __future__ import annotations
 
 import csv
@@ -24,15 +14,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "data", "bengaluru", "_metro_src", "metro-lines-stations.geojson")
 OUT = os.path.join(ROOT, "data", "bengaluru", "gtfs", "namma_metro.zip")
 
-ASSIGN_DEG = 0.0035          # ~390 m: station counts as on a line if within this
-SPEED_KMH = 33.0            # average metro speed including acceleration
-DWELL_S = 25               # dwell per station (seconds)
+ASSIGN_DEG = 0.0035
+SPEED_KMH = 33.0
+DWELL_S = 25
 SERVICE_START = "05:00:00"
 SERVICE_END = "23:00:00"
-HEADWAY_S = 360            # 6 minutes
+HEADWAY_S = 360
 START_DATE, END_DATE = "20240101", "20271231"
 EARTH_KM = 6371.0
-
 
 def haversine_km(a, b):
     (lng1, lat1), (lng2, lat2) = a, b
@@ -41,12 +30,10 @@ def haversine_km(a, b):
     h = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
     return 2 * EARTH_KM * math.asin(min(1.0, math.sqrt(h)))
 
-
 def hms(total_s):
     h, rem = divmod(int(total_s), 3600)
     m, s = divmod(rem, 60)
     return f"{h:02d}:{m:02d}:{s:02d}"
-
 
 def load():
     feats = json.load(open(SRC, encoding="utf-8"))["features"]
@@ -61,12 +48,11 @@ def load():
             stations.append((name, lng, lat))
     return lines, stations
 
-
 def main():
     lines, stations = load()
-    # global stop registry (dedupe by name)
+
     stop_id = {}
-    stops = []  # (id, name, lat, lng)
+    stops = []
     for name, lng, lat in stations:
         if name not in stop_id:
             sid = f"S{len(stops)+1}"
@@ -82,7 +68,7 @@ def main():
             if line.distance(p) < ASSIGN_DEG:
                 on.append((line.project(p), name, lng, lat))
         on.sort(key=lambda t: t[0])
-        # dedupe consecutive same-name
+
         seq = []
         for _d, name, lng, lat in on:
             if not seq or seq[-1][0] != name:
@@ -94,7 +80,7 @@ def main():
         for direction, ordered in ((0, seq), (1, list(reversed(seq)))):
             tid = f"{rid}_d{direction}"
             trips.append((rid, "DAILY", tid, direction))
-            t = 0.0  # seconds from SERVICE_START base
+            t = 0.0
             base = 5 * 3600
             prev = None
             for k, (name, lng, lat) in enumerate(ordered):
@@ -112,14 +98,12 @@ def main():
     print(f"  stops {len(stops)}  routes {len(routes)}  trips {len(trips)}  "
           f"stop_times {len(stop_times)}  frequencies {len(freqs)}")
 
-
 def _csv(rows, header):
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(header)
     w.writerows(rows)
     return buf.getvalue()
-
 
 def _write(stops, routes, trips, stop_times, freqs):
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -143,7 +127,6 @@ def _write(stops, routes, trips, stop_times, freqs):
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as z:
         for fname, content in files.items():
             z.writestr(fname, content)
-
 
 if __name__ == "__main__":
     main()

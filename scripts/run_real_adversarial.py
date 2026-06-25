@@ -1,20 +1,4 @@
-"""Adversarial / irregular benchmarks on the real London network (improvement-plan #4).
 
-Where straight-line distance lies most, a geometric point is worst and our network-aware
-search wins biggest. Three topologies:
-  river    - origins split across the Thames where bridges are sparse, so a mid-river
-             centroid forces one side into a long detour;
-  mismatch - one driver among four walkers, so a point good for the driver is far in
-             time for the walkers and vice versa;
-  linear   - origins strung along an arterial, the worst case for a 2-D centroid.
-
-Each reuses the real r5py precompute (coarse+fine grid plus the off-grid geometric
-baseline points) and the standard run_instance, then reports how far the centroid's
-variance blows up against ours.
-
-Run:  python scripts/run_real_adversarial.py
-Out:  outputs/real_adversarial.csv
-"""
 from __future__ import annotations
 
 import datetime as dt
@@ -32,29 +16,25 @@ if _jdk:
     os.environ["PATH"] = os.path.join(_jdk[0], "bin") + os.pathsep + os.environ.get("PATH", "")
 os.environ.setdefault("JAVA_TOOL_OPTIONS", "-Xmx4g")
 
-import geopandas as gpd  # noqa: E402
-import pandas as pd  # noqa: E402
-from shapely.geometry import Point  # noqa: E402
+import geopandas as gpd
+import pandas as pd
+from shapely.geometry import Point
 
-from fairmp import baselines  # noqa: E402
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.candidates import polyfill_centroids, region_polygon  # noqa: E402
-from fairmp.geo import LatLng  # noqa: E402
-from fairmp.runner import run_instance  # noqa: E402
-from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend  # noqa: E402
+from fairmp import baselines
+from fairmp.algorithm import Params
+from fairmp.candidates import polyfill_centroids, region_polygon
+from fairmp.geo import LatLng
+from fairmp.runner import run_instance
+from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend
 
 OSM = os.path.join(ROOT, "data", "london", "network.osm.pbf")
 GTFS = [os.path.join(ROOT, "data", "london", "gtfs", "london_bus.zip")]
 
-# A stretch of the Thames east of the centre with few crossings: north bank around
-# Limehouse, south bank around Rotherhithe. A straight-line centroid lands mid-river.
 THAMES_N = (51.5105, -0.0380)
 THAMES_S = (51.4960, -0.0420)
 
-
 def _jitter(rng, lat, lng, sd=0.004):
     return LatLng(rng.gauss(lat, sd), rng.gauss(lng, sd))
-
 
 def make_instance(kind, seed):
     import random
@@ -77,7 +57,6 @@ def make_instance(kind, seed):
         raise ValueError(kind)
     return origins, modes
 
-
 def candidates_for(origins, modes, coarse, fine):
     region = region_polygon(origins)
     pts = {}
@@ -89,7 +68,6 @@ def candidates_for(origins, modes, coarse, fine):
                baselines.geometric_median(origins, modes)):
         pts[(round(bp.lat, 6), round(bp.lng, 6))] = bp
     return list(pts.values())
-
 
 def precompute(r5, origins, modes, cands, departure):
     r5py = r5._r5py
@@ -116,7 +94,6 @@ def precompute(r5, origins, modes, cands, departure):
             t = r.travel_time
             pre.put(mode, o, c, float(t) if t == t else float("inf"))
     return pre
-
 
 def main():
     print("loading London network...")
@@ -153,7 +130,6 @@ def main():
         print(f"\n[{kind}] centroid variance / ours variance = {blow:.1f}x "
               f"(ours {ours:.1f}, centroid {cen:.1f})")
         print(piv.round(1).sort_values("variance").to_string())
-
 
 if __name__ == "__main__":
     main()

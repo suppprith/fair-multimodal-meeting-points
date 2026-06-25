@@ -1,7 +1,4 @@
-"""Experiment harness: run our method and the baselines on an instance, collect
-chosen points, per-user times, metrics, optimality gap, runtime, and routing-query
-count. Each method gets a fresh cache so query counts are comparable.
-"""
+
 from __future__ import annotations
 
 import math
@@ -23,16 +20,11 @@ BASELINES = {
     "exhaustive": baselines.exhaustive_variance,
 }
 
-# Ground-truth baselines that are only meaningful for a specific objective variant.
 VARIANT_GROUND_TRUTH = {"ede": ("exhaustive_ede", baselines.exhaustive_ede)}
-
 
 def solve_all(origins, modes_list, backend, params: Params | None = None, fine_res=9,
               variants=()):
-    """Run every method once; return {method: {point, times, runtime_s, routing_calls, evaluated}}.
 
-    variants names extra objective-variant runs of our algorithm (e.g. ("ede",)); each
-    is reported as ours_<variant> and pulls in its exhaustive ground truth."""
     p = params or Params()
     out = {}
 
@@ -66,7 +58,6 @@ def solve_all(origins, modes_list, backend, params: Params | None = None, fine_r
                      "routing_calls": ev.calls, "evaluated": None}
     return out
 
-
 def rows_from_results(results, n, t_max, gamma):
     rows = []
     for name, r in results.items():
@@ -85,7 +76,6 @@ def rows_from_results(results, n, t_max, gamma):
             if math.isfinite(m["ede"]):
                 m["ede_gap"] = (m["ede"] - ede_base) / ede_base
     return rows
-
 
 def run_instance(origins, modes_list, backend, params: Params | None = None, fine_res=9,
                  variants=()):

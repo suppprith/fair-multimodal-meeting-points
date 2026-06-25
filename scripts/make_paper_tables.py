@@ -1,13 +1,4 @@
-"""Generate LaTeX (booktabs) tables for the paper from outputs/*.csv, so the tables
-regenerate from the real results instead of being hand-copied. Emits, when the inputs
-exist: the social fairness table, the adversarial-topology table, and compact
-dark-store and ride-share cross-domain tables.
 
-Requires booktabs in the LaTeX preamble (\\usepackage{booktabs}).
-
-Run:  python scripts/make_paper_tables.py
-Out:  outputs/paper_tables.tex  (also printed to stdout)
-"""
 from __future__ import annotations
 
 import os
@@ -15,7 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pandas as pd  # noqa: E402
+import pandas as pd
 
 OUT = "outputs"
 
@@ -28,11 +19,9 @@ DISPLAY = {
     "coverage_max": "Coverage-max",
 }
 
-
 def _grouped(path, metrics):
     df = pd.read_csv(path)
     return df.groupby("method")[metrics].mean(numeric_only=True)
-
 
 def _table(rows, colspec, header, caption, label):
     out = [r"\begin{table}[t]", r"\centering",
@@ -43,10 +32,9 @@ def _table(rows, colspec, header, caption, label):
     out += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
     return "\n".join(out)
 
-
 def fairness_table():
     g = _grouped(f"{OUT}/real_london.csv", ["variance", "jain", "gini", "ede", "max"])
-    g = g.drop(index=[m for m in ["exhaustive_ede"] if m in g.index])  # duplicate of Ours (EDE)
+    g = g.drop(index=[m for m in ["exhaustive_ede"] if m in g.index])
     g = g.sort_values("variance")
     rows = [f"{DISPLAY.get(m, m)} & {r.variance:.1f} & {r.jain:.2f} & {r.gini:.2f} & "
             f"{r.ede:.1f} & {r['max']:.1f}" for m, r in g.iterrows()]
@@ -57,7 +45,6 @@ def fairness_table():
         "and max are fairer; higher Jain is fairer. The variance objective minimises "
         "variance and the EDE objective minimises EDE; both match their exhaustive references.",
         "tab:fairness")
-
 
 def adversarial_table():
     df = pd.read_csv(f"{OUT}/real_adversarial.csv")
@@ -76,7 +63,6 @@ def adversarial_table():
         "as a multiple of ours.",
         "tab:adversarial")
 
-
 def darkstore_table():
     g = _grouped(f"{OUT}/real_darkstore.csv", ["w_variance", "courier_gini", "pct_within_sla"])
     order = [m for m in ["ours", "ours_ede", "min_sum", "weighted_centroid", "coverage_max"] if m in g.index]
@@ -89,7 +75,6 @@ def darkstore_table():
         "Dark-store siting on the real London network (real cycling times, synthetic "
         "demand, eight instances, SLA 10 min). Lower w-variance and Gini are fairer.",
         "tab:darkstore")
-
 
 def rideshare_table():
     g = _grouped(f"{OUT}/real_rideshare.csv", ["variance", "spread", "max", "jain"])
@@ -104,7 +89,6 @@ def rideshare_table():
         "mean over eight instances. Geometric centroid/median are infeasible on some "
         "instances (off-network) and are omitted.",
         "tab:rideshare")
-
 
 def main():
     builders = [
@@ -126,7 +110,6 @@ def main():
         f.write(tex)
     print(tex)
     print(f"wrote {OUT}/paper_tables.tex", file=sys.stderr)
-
 
 if __name__ == "__main__":
     main()

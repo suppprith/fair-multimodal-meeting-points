@@ -1,13 +1,4 @@
-"""Real London Section-6 numbers: social meetup on the actual road + bus network.
 
-Builds the r5 network once (cached), and for each instance precomputes every user's
-travel time to all candidates with r5py batch matrices, then runs our method and the
-baselines as lookups (fast, unchanged). Optimality-gap and query-count are backend
-independent (see the Euclidean sweeps); this gives the real travel-time fairness.
-
-Run:  python scripts/run_real_london.py
-Out:  outputs/real_london.csv
-"""
 from __future__ import annotations
 
 import datetime as dt
@@ -25,21 +16,20 @@ if _jdk:
     os.environ["PATH"] = os.path.join(_jdk[0], "bin") + os.pathsep + os.environ.get("PATH", "")
 os.environ.setdefault("JAVA_TOOL_OPTIONS", "-Xmx4g")
 
-import geopandas as gpd  # noqa: E402
-import pandas as pd  # noqa: E402
-from shapely.geometry import Point  # noqa: E402
+import geopandas as gpd
+import pandas as pd
+from shapely.geometry import Point
 
-from fairmp import baselines  # noqa: E402
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.candidates import polyfill_centroids, region_polygon  # noqa: E402
-from fairmp.runner import run_instance  # noqa: E402
-from fairmp.scenarios import assign_modes, sample_origins  # noqa: E402
-from fairmp.sweep import pareto_matched_mean  # noqa: E402
-from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend  # noqa: E402
+from fairmp import baselines
+from fairmp.algorithm import Params
+from fairmp.candidates import polyfill_centroids, region_polygon
+from fairmp.runner import run_instance
+from fairmp.scenarios import assign_modes, sample_origins
+from fairmp.sweep import pareto_matched_mean
+from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend
 
 OSM = os.path.join(ROOT, "data", "london", "network.osm.pbf")
 GTFS = [os.path.join(ROOT, "data", "london", "gtfs", "london_bus.zip")]
-
 
 def candidates_for(origins, modes, coarse, fine):
     region = region_polygon(origins)
@@ -48,13 +38,12 @@ def candidates_for(origins, modes, coarse, fine):
         pts[(round(p.lat, 6), round(p.lng, 6))] = p
     for _c, p in polyfill_centroids(region, fine):
         pts[(round(p.lat, 6), round(p.lng, 6))] = p
-    # geometric baselines are off-grid points; include them so they get real times
+
     for bp in (baselines.geometric_centroid(origins, modes),
                baselines.weighted_centroid(origins, modes),
                baselines.geometric_median(origins, modes)):
         pts[(round(bp.lat, 6), round(bp.lng, 6))] = bp
     return list(pts.values())
-
 
 def precompute(r5, origins, modes, cands, departure):
     r5py = r5._r5py
@@ -84,15 +73,13 @@ def precompute(r5, origins, modes, cands, departure):
             pre.put(mode, o, c, float(t) if t == t else float("inf"))
     return pre
 
-
 def main():
     print("loading London network (cached .dat if present)...")
     r5 = R5Backend(OSM, GTFS)
     print("network ready")
     today = dt.date.today()
     wed = today + dt.timedelta((2 - today.weekday()) % 7 + 7)
-    # DEPARTURE_HOUR lets us probe peak (default 08:30) vs off-peak; OUT_TAG keeps the
-    # two result files separate.
+
     hour = int(os.environ.get("DEPARTURE_HOUR", "8"))
     minute = int(os.environ.get("DEPARTURE_MIN", "30"))
     departure = dt.datetime(wed.year, wed.month, wed.day, hour, minute)
@@ -110,7 +97,7 @@ def main():
         for r in run_instance(origins, modes, pre, params, fine_res=9, variants=("ede",)):
             r.update(seed=seed)
             rows.append(r)
-        # Pareto operating point: dominate min-sum at matched mean (reuse the same matrices)
+
         _front, ref, op = pareto_matched_mean(origins, modes, pre, base_params=params, fine_res=9)
         if op is not None:
             pareto_rows.append({"seed": seed, "minsum_mean": ref["mean"], "minsum_variance": ref["variance"],
@@ -132,7 +119,6 @@ def main():
         print("\nPareto matched-mean (<=5% mean budget vs min-sum):")
         print(pdf.round(2).to_string(index=False))
         print(f"mean variance reduction at matched mean: {pdf['variance_reduction_pct'].mean():.0f}%")
-
 
 if __name__ == "__main__":
     main()

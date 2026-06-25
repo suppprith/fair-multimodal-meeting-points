@@ -1,11 +1,4 @@
-"""Dark-store / micro-fulfilment siting: the inverse, supply-side case.
 
-Served points are demand cells weighted by population; the facility is placed to
-minimise the demand-weighted variance of delivery travel time. Couriers travel by
-bike or scooter on the road network (no transit). Reuses the core algorithm with
-weights. Domain metrics: percentile delivery time, share within SLA, courier-load
-Gini. Baseline: coverage-maximising siting (MCLP-style).
-"""
 from __future__ import annotations
 
 import math
@@ -19,16 +12,10 @@ from .geo import LatLng
 from .scenarios import CITY_BBOX
 from .travel_time import CachedEvaluator
 
-COURIER = ["cycling"]  # bike; for scooter use ["driving"]
-
+COURIER = ["cycling"]
 
 def sample_demand(city, n_cells, seed=0, clusters=2, sd=0.008, service_radius_deg=0.025):
-    """Synthetic demand for one store's service area, with population-like weights.
 
-    A dark store serves a local area, so demand is placed within service_radius of a
-    single randomly chosen service centre (not city-wide). For real runs, replace
-    with WorldPop raster sampling (see sample_demand_worldpop).
-    """
     rng = random.Random(seed)
     lat0, lng0, lat1, lng1 = CITY_BBOX[city]
     cx = rng.uniform(lat0 + 0.05, lat1 - 0.05)
@@ -45,14 +32,9 @@ def sample_demand(city, n_cells, seed=0, clusters=2, sd=0.008, service_radius_de
         weights.append(max(0.1, rng.gauss(inten, 0.4)))
     return demand, weights
 
+def sample_demand_worldpop(raster_path, bbox, n_cells, seed=0):
 
-def sample_demand_worldpop(raster_path, bbox, n_cells, seed=0):  # pragma: no cover
-    """Sample demand cells weighted by a WorldPop population raster (needs rasterio).
-
-    bbox = (lat_min, lng_min, lat_max, lng_max). Returns (demand, weights). Use for
-    real runs once data/<city>/worldpop.tif is downloaded.
-    """
-    import rasterio  # noqa: F401
+    import rasterio
     import numpy as np
     import rasterio
 
@@ -71,12 +53,11 @@ def sample_demand_worldpop(raster_path, bbox, n_cells, seed=0):  # pragma: no co
                 continue
             if val is None or val <= 0 or math.isnan(val):
                 continue
-            # accept proportional to population (rejection sampling)
+
             if rng.random() < min(1.0, float(val) / 50.0):
                 demand.append(LatLng(lat, lng))
                 weights.append(float(val))
         return demand, weights
-
 
 def _weighted_centroid(demand, weights):
     w = sum(weights)
@@ -84,9 +65,8 @@ def _weighted_centroid(demand, weights):
     lng = sum(d.lng * x for d, x in zip(demand, weights)) / w
     return LatLng(lat, lng)
 
-
 def _coverage_max_point(demand, weights, ev, sla_min, res, courier):
-    """MCLP-style: candidate covering the most demand (by weight) within the SLA."""
+
     best, best_cov = None, -1.0
     for _c, pt in polyfill_centroids(region_polygon(demand), res):
         cov = sum(w for o, w in zip(demand, weights)
@@ -94,7 +74,6 @@ def _coverage_max_point(demand, weights, ev, sla_min, res, courier):
         if cov > best_cov:
             best_cov, best = cov, pt
     return best
-
 
 def _min_sum_point(demand, ev, res, courier):
     best, best_val = None, math.inf
@@ -106,7 +85,6 @@ def _min_sum_point(demand, ev, res, courier):
         if s < best_val:
             best_val, best = s, pt
     return best
-
 
 def summarize_site(times, weights, sla_min) -> dict:
     return {
@@ -120,7 +98,6 @@ def summarize_site(times, weights, sla_min) -> dict:
         "max": metrics.max_time(times),
     }
 
-
 def place_darkstore(demand, weights, backend, params=None, courier=None):
     courier = courier or COURIER
     ev = CachedEvaluator(backend)
@@ -128,10 +105,8 @@ def place_darkstore(demand, weights, backend, params=None, courier=None):
         demand, [courier] * len(demand), ev, params, weights=weights)
     return best, runners, ev, diag
 
-
 def run_darkstore_instance(demand, weights, backend, params=None, sla_min=10.0, courier=None):
-    """Compare our weighted-variance siting against coverage-max, weighted centroid,
-    and min-sum, on the dark-store metrics."""
+
     courier = courier or COURIER
     p = params or Params(coarse_res=8, fine_res=9, k_c=300, k_refine=10, t_max=30.0)
     rows = []

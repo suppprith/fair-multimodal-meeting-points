@@ -1,11 +1,4 @@
-"""Dark-store siting experiments: our weighted-variance placement vs
-coverage-maximising, weighted-centroid, and min-sum baselines.
 
-Runs on the data-free Euclidean backend (couriers are road-only, so this needs no
-GTFS; for real runs swap in R5Backend with city OSM and WorldPop demand).
-
-Run:  python scripts/run_darkstore.py
-"""
 from __future__ import annotations
 
 import os
@@ -13,12 +6,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pandas as pd  # noqa: E402
+import pandas as pd
 
-from fairmp import darkstore  # noqa: E402
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.travel_time import EuclideanBackend  # noqa: E402
-
+from fairmp import darkstore
+from fairmp.algorithm import Params
+from fairmp.travel_time import EuclideanBackend
 
 def main():
     backend = EuclideanBackend()
@@ -40,7 +32,6 @@ def main():
     cols = ["w_variance", "p90", "pct_within_sla", "courier_gini", "routing_calls"]
     print("Dark-store siting (mean over instances, SLA = {:.0f} min):".format(sla_min))
     print(df.groupby("method")[cols].mean().round(2).sort_values("w_variance").to_string())
-
 
 if __name__ == "__main__":
     main()

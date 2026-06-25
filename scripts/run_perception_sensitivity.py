@@ -1,21 +1,4 @@
-"""Perception-weight sensitivity (paper critique 4): are the method's rankings stable
-across the plausible range of the Eq 2 perception weights alpha and delta?
 
-The headline runs use the routing engine's clock times directly (alpha=1, delta=0). A
-reviewer can fairly ask whether the variance objective only wins at that operating point.
-We answer it by re-running our method and every baseline under the PerceptionBackend over a
-grid of alpha in {1.0, 1.5, 2.0} (out-of-vehicle burden, Wardman 2004) and delta in
-{0, 5, 10} minutes per transfer, and checking that the ordering (our variance below every
-distance/aggregate baseline) holds at every grid point.
-
-Backend is Euclidean (data-free), with transit split into in-vehicle line-haul and
-out-of-vehicle access/egress/wait so the perception weighting bites. The qualitative
-conclusion (ranking stability) is what transfers to the real network; absolute variance
-values are development-only, as elsewhere in the repo.
-
-Run:  python scripts/run_perception_sensitivity.py
-Out:  outputs/perception_sensitivity.csv
-"""
 from __future__ import annotations
 
 import os
@@ -23,25 +6,23 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pandas as pd  # noqa: E402
+import pandas as pd
 
-from fairmp.runner import run_instance  # noqa: E402
-from fairmp.scenarios import assign_modes, sample_origins  # noqa: E402
-from fairmp.travel_time import EuclideanBackend, PerceptionBackend  # noqa: E402
+from fairmp.runner import run_instance
+from fairmp.scenarios import assign_modes, sample_origins
+from fairmp.travel_time import EuclideanBackend, PerceptionBackend
 
 ALPHAS = [1.0, 1.5, 2.0]
 DELTAS = [0.0, 5.0, 10.0]
 CITIES = ["london", "bengaluru"]
 N = 6
 SEEDS = list(range(12))
-# baselines our variance must stay below for the ranking to be called stable
-RIVALS = ["centroid", "geometric_median", "weighted_centroid", "min_sum", "min_max", "min_range"]
 
+RIVALS = ["centroid", "geometric_median", "weighted_centroid", "min_sum", "min_max", "min_range"]
 
 def _mean(xs):
     xs = [x for x in xs if x is not None]
     return sum(xs) / len(xs) if xs else float("nan")
-
 
 def main():
     os.makedirs("outputs", exist_ok=True)
@@ -51,7 +32,7 @@ def main():
     for alpha in ALPHAS:
         for delta in DELTAS:
             backend = PerceptionBackend(base, alpha=alpha, delta=delta)
-            per_method = {}  # method -> list of variances across instances
+            per_method = {}
             jain = {}
             for city in CITIES:
                 for seed in SEEDS:
@@ -64,7 +45,7 @@ def main():
 
             ours = _mean(per_method.get("ours", []))
             rivals_mean = {m: _mean(per_method.get(m, [])) for m in RIVALS}
-            # ranking is stable if our mean variance is below every rival's at this grid point
+
             ours_best = all(ours <= v for v in rivals_mean.values())
             worst_rival = max(rivals_mean, key=rivals_mean.get)
             rows.append({
@@ -96,7 +77,6 @@ def main():
           % (df["reduction_vs_centroid_pct"].min(), df["reduction_vs_centroid_pct"].max()))
     print("Our variance reduction vs min-sum ranges %.1f%%-%.1f%% across the grid."
           % (df["reduction_vs_min_sum_pct"].min(), df["reduction_vs_min_sum_pct"].max()))
-
 
 if __name__ == "__main__":
     main()

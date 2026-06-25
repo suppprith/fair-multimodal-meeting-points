@@ -1,13 +1,4 @@
-"""Real dark-store siting on the London road network (couriers cycling on OSM).
 
-Demand is synthetic (local service area, population-like weights); travel times are
-real r5py cycling times on the London road network. Reuses the precompute approach:
-one r5 batch matrix (all demand -> all candidates), then run_darkstore_instance as
-lookups.
-
-Run:  python scripts/run_real_darkstore.py
-Out:  outputs/real_darkstore.csv
-"""
 from __future__ import annotations
 
 import datetime as dt
@@ -25,19 +16,18 @@ if _jdk:
     os.environ["PATH"] = os.path.join(_jdk[0], "bin") + os.pathsep + os.environ.get("PATH", "")
 os.environ.setdefault("JAVA_TOOL_OPTIONS", "-Xmx4g")
 
-import geopandas as gpd  # noqa: E402
-import pandas as pd  # noqa: E402
-from shapely.geometry import Point  # noqa: E402
+import geopandas as gpd
+import pandas as pd
+from shapely.geometry import Point
 
-from fairmp import darkstore  # noqa: E402
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.candidates import polyfill_centroids, region_polygon  # noqa: E402
-from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend  # noqa: E402
+from fairmp import darkstore
+from fairmp.algorithm import Params
+from fairmp.candidates import polyfill_centroids, region_polygon
+from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend
 
 OSM = os.path.join(ROOT, "data", "london", "network.osm.pbf")
 GTFS = [os.path.join(ROOT, "data", "london", "gtfs", "london_bus.zip")]
 COURIER = ["cycling"]
-
 
 def candidates_for(demand, weights, coarse, fine):
     region = region_polygon(demand)
@@ -49,7 +39,6 @@ def candidates_for(demand, weights, coarse, fine):
     wc = darkstore._weighted_centroid(demand, weights)
     pts[(round(wc.lat, 6), round(wc.lng, 6))] = wc
     return list(pts.values())
-
 
 def precompute(r5, origins, mode, cands, departure):
     r5py = r5._r5py
@@ -73,7 +62,6 @@ def precompute(r5, origins, mode, cands, departure):
         pre.put(mode, o, c, float(t) if t == t else float("inf"))
     return pre
 
-
 def main():
     print("loading London network...")
     r5 = R5Backend(OSM, GTFS)
@@ -86,8 +74,7 @@ def main():
 
     n_instances = int(os.environ.get("N_INSTANCES", "100"))
     n_cells = int(os.environ.get("DEMAND_CELLS", "40"))
-    # WORLDPOP=1 draws demand from the real WorldPop population raster (inner-London
-    # service area) instead of the synthetic generator: real-demand, larger-scale siting.
+
     use_worldpop = bool(os.environ.get("WORLDPOP"))
     wp_raster = os.path.join(ROOT, "data", "london", "worldpop_gbr.tif")
     wp_bbox = (51.48, -0.16, 51.54, -0.06)
@@ -110,7 +97,6 @@ def main():
     cols = ["w_variance", "w_ede", "p90", "pct_within_sla", "courier_gini", "max"]
     print("\nREAL London dark-store siting (real cycling times, synthetic demand; SLA 10 min):")
     print(df.groupby("method")[cols].mean(numeric_only=True).round(2).sort_values("w_variance").to_string())
-
 
 if __name__ == "__main__":
     main()

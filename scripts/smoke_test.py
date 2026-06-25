@@ -1,8 +1,4 @@
-"""End-to-end smoke test on a synthetic instance with the data-free Euclidean
-backend. Validates the algorithm, baselines, and metrics without any downloads.
 
-Run:  python scripts/smoke_test.py
-"""
 from __future__ import annotations
 
 import os
@@ -10,13 +6,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pandas as pd  # noqa: E402
+import pandas as pd
 
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.runner import run_instance  # noqa: E402
-from fairmp.scenarios import assign_modes, sample_origins  # noqa: E402
-from fairmp.travel_time import EuclideanBackend  # noqa: E402
-
+from fairmp.algorithm import Params
+from fairmp.runner import run_instance
+from fairmp.scenarios import assign_modes, sample_origins
+from fairmp.travel_time import EuclideanBackend
 
 def main():
     city, n = "london", 5
@@ -35,7 +30,6 @@ def main():
     pd.set_option("display.max_columns", 20)
     print(f"City={city}  N={n}  modes={[m[0] for m in modes]}")
     print(df.to_string(index=False))
-
 
 if __name__ == "__main__":
     main()

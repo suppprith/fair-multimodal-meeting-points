@@ -1,9 +1,4 @@
-"""Generate all paper figures from the data-free Euclidean backend. Re-point the
-backend to R5Backend for the real figures once data is in place.
 
-Run:  python scripts/make_figures.py
-Outputs: outputs/sweep.csv and outputs/figures/*.png
-"""
 from __future__ import annotations
 
 import os
@@ -11,21 +6,20 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import matplotlib  # noqa: E402
+import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import pandas as pd  # noqa: E402
+import matplotlib.pyplot as plt
+import pandas as pd
 
-from fairmp.algorithm import Params  # noqa: E402
-from fairmp.runner import solve_all  # noqa: E402
-from fairmp.sweep import gamma_sweep, make_instance, resolution_sweep, run_sweep, size_sweep  # noqa: E402
-from fairmp.travel_time import EuclideanBackend  # noqa: E402
+from fairmp.algorithm import Params
+from fairmp.runner import solve_all
+from fairmp.sweep import gamma_sweep, make_instance, resolution_sweep, run_sweep, size_sweep
+from fairmp.travel_time import EuclideanBackend
 
 OUT = "outputs/figures"
 backend = EuclideanBackend()
 P = Params(coarse_res=8, fine_res=9, k_c=300, k_refine=10, t_max=120.0)
-
 
 def _box(ax, data, labels, ylabel, title):
     ax.boxplot(data, showmeans=True)
@@ -33,7 +27,6 @@ def _box(ax, data, labels, ylabel, title):
     ax.set_xticklabels(labels, rotation=30, ha="right")
     ax.set_ylabel(ylabel)
     ax.set_title(title)
-
 
 def fig_peruser():
     origins, modes = make_instance("london", 6, seed=3)
@@ -48,7 +41,6 @@ def fig_peruser():
     fig.savefig(f"{OUT}/fig_peruser.png", dpi=150)
     plt.close(fig)
 
-
 def fig_aggregate(df):
     order = [m for m in ["centroid", "min_sum", "min_max", "weighted_centroid",
                          "geometric_median", "random", "ours"] if m in set(df["method"])]
@@ -59,7 +51,6 @@ def fig_aggregate(df):
         fig.tight_layout()
         fig.savefig(f"{OUT}/fig_{metric}_by_method.png", dpi=150)
         plt.close(fig)
-
 
 def fig_pareto():
     origins, modes = make_instance("london", 6, seed=3)
@@ -74,7 +65,6 @@ def fig_pareto():
     fig.tight_layout()
     fig.savefig(f"{OUT}/fig_pareto.png", dpi=150)
     plt.close(fig)
-
 
 def fig_resolution():
     origins, modes = make_instance("london", 6, seed=3)
@@ -91,7 +81,6 @@ def fig_resolution():
     fig.savefig(f"{OUT}/fig_resolution.png", dpi=150)
     plt.close(fig)
 
-
 def fig_scaling():
     rows = size_sweep(backend, "london", ns=[3, 5, 10, 20, 40], seeds=[0, 1, 2], base_params=P, fine_res=9)
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -105,7 +94,6 @@ def fig_scaling():
     fig.tight_layout()
     fig.savefig(f"{OUT}/fig_scaling.png", dpi=150)
     plt.close(fig)
-
 
 def fig_map():
     origins, modes = make_instance("london", 6, seed=3)
@@ -125,7 +113,6 @@ def fig_map():
     fig.savefig(f"{OUT}/fig_map.png", dpi=150)
     plt.close(fig)
 
-
 def main():
     os.makedirs(OUT, exist_ok=True)
     rows = run_sweep(backend, ["london", "bengaluru"], [3, 5, 10], ["mixed"], list(range(5)), params=P, fine_res=9)
@@ -142,7 +129,6 @@ def main():
     print("figures ->", OUT)
     print(df.groupby("method")[["variance", "jain", "opt_gap", "routing_calls"]].mean().round(3)
           .sort_values("variance").to_string())
-
 
 if __name__ == "__main__":
     main()
