@@ -1,8 +1,14 @@
-# Data download: London and Bengaluru
+# Data download: London, Bengaluru, Tokyo, Bay Area
 
-Full rationale in `../../data-sources.md`. Put files under `data/london/` and
-`data/bengaluru/`. Record source URL and date for each. None of this is fetched
-yet; this is the checklist.
+Full rationale in `../../data-sources.md`. Put files under `data/<city>/`. Record source
+URL and date for each. This is the checklist; `scripts/fetch_data.py` auto-pulls the
+no-account, direct-URL items and prints the rest as manual steps.
+
+The four cities are chosen for contrasting street and transit topology: London (compact,
+mature multimodal), Bengaluru (sprawling, organic; bus + partial metro), Tokyo (dense
+rail), Bay Area (car-dominant sprawl; rail + bus). London/Bengaluru are fetched; Tokyo and
+Bay Area are scaffolded (bboxes + fetch wiring in place) and need their data pulled and a
+JDK 21 + r5py run.
 
 ## Both cities
 
@@ -33,6 +39,26 @@ yet; this is the checklist.
   model from station coords + headways and label synthetic.
 - **Emergency incidents:** no open dataset -> generate synthetic from WorldPop.
 - **Ride OD:** no open trip data -> synthetic OD.
+
+## Tokyo
+
+- **Road network (OSM):** bbbike Tokyo extract (auto) -> `data/tokyo/network.osm.pbf`, or
+  Geofabrik `asia/japan/kanto` and crop to the 23-wards bbox.
+- **Transit (GTFS):** Open Data Platform for Transportation (ODPT, https://www.odpt.org)
+  publishes GTFS-JP for Tokyo Metro, Toei, and JR-East but needs a free API token. The
+  Mobility Database (https://mobilitydatabase.org) mirrors some feeds without a token.
+  -> `data/tokyo/gtfs/`. Dense-rail city, so transit coverage matters here.
+- **Population (siting):** WorldPop -> `data/tokyo/worldpop.tif`.
+
+## Bay Area
+
+- **Road network (OSM):** bbbike SanFrancisco extract (auto) -> `data/bayarea/network.osm.pbf`,
+  or Geofabrik `north-america/us/california` cropped to the SF + inner East Bay bbox.
+- **Transit (GTFS):** BART rail and SFMTA Muni publish open, no-account GTFS (auto-fetched)
+  -> `data/bayarea/gtfs/`. For full regional coverage, the 511.org all-agency feed
+  (https://511.org/open-data/transit) needs a free API token. Car-dominant city, so this
+  is the test of whether the advantage survives a sparse-transit network.
+- **Population (siting):** WorldPop or US Census blocks -> `data/bayarea/worldpop.tif`.
 
 ## Runtime requirement
 

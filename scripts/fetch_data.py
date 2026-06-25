@@ -1,9 +1,12 @@
-"""Fetch the auto-downloadable open data for London and Bengaluru.
+"""Fetch the auto-downloadable open data for the four evaluation cities
+(London, Bengaluru, Tokyo, Bay Area).
 
 Run:  python scripts/fetch_data.py
 
 Covers the no-account, direct-URL sources. The rest (large extracts, account-gated,
 or browser-only) are printed as manual steps at the end. See ../../data-sources.md.
+URLs are best-effort and should be re-verified before a run; failures are reported
+per item, not fatal.
 """
 from __future__ import annotations
 
@@ -17,6 +20,13 @@ AUTO = [
     ("london/network.osm.pbf", "https://download.bbbike.org/osm/bbbike/London/London.osm.pbf"),
     ("london/gtfs/london_bus.zip", "https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/london/"),
     ("bengaluru/gtfs/bmtc.zip", "https://raw.githubusercontent.com/Vonter/bmtc-gtfs/main/gtfs/bmtc.zip"),
+    # Tokyo: OSM extract auto; transit (ODPT) is account-gated -> manual below.
+    ("tokyo/network.osm.pbf", "https://download.bbbike.org/osm/bbbike/Tokyo/Tokyo.osm.pbf"),
+    # Bay Area: OSM extract plus the two largest agencies that publish open, no-account GTFS
+    # (BART rail + SFMTA Muni). The 511 regional all-agency feed is token-gated -> manual.
+    ("bayarea/network.osm.pbf", "https://download.bbbike.org/osm/bbbike/SanFrancisco/SanFrancisco.osm.pbf"),
+    ("bayarea/gtfs/bart.zip", "https://www.bart.gov/dev/schedules/google_transit.zip"),
+    ("bayarea/gtfs/muni.zip", "https://gtfs.sfmta.com/transitdata/google_transit.zip"),
 ]
 
 MANUAL = """
@@ -26,6 +36,12 @@ Manual steps (large + crop, account, or browser-only):
   - London tube/rail GTFS: already bundled in the London region feed above; no separate
     download needed.
   - Bengaluru metro GTFS (synthetic): built by scripts/build_metro_gtfs.py.
+  - Tokyo transit GTFS: Open Data Platform for Transportation (ODPT,
+    https://www.odpt.org) needs a free API token; Tokyo Metro / Toei / JR-East GTFS-JP
+    feeds -> data/tokyo/gtfs/ . Mobility Database (https://mobilitydatabase.org) mirrors
+    some Tokyo feeds without a token; verify currency before use.
+  - Bay Area regional GTFS: 511.org all-agency feed (https://511.org/open-data/transit)
+    needs a free API token; the BART + Muni feeds above cover rail + SF core without one.
   - WorldPop rasters (siting scenario): worldpop.org -> data/<city>/worldpop.tif
   - London Fire incidents (emergency, real): London Datastore -> data/london/incidents.csv
 """

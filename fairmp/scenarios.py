@@ -11,6 +11,10 @@ from .geo import LatLng
 CITY_BBOX = {
     "london": (51.40, -0.30, 51.62, 0.10),
     "bengaluru": (12.85, 77.45, 13.10, 77.75),
+    # Tokyo: the 23 special wards core (dense rail topology).
+    "tokyo": (35.55, 139.60, 35.82, 139.92),
+    # Bay Area: San Francisco plus the inner East Bay (Oakland/Berkeley); car-dominant sprawl.
+    "bayarea": (37.70, -122.52, 37.88, -122.20),
 }
 
 MODES = ["transit", "driving", "walking", "cycling"]
