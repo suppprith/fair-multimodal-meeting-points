@@ -1,0 +1,8 @@
+knob,value,opt_gap_pct,abs_gap_std_min,routing_calls
+coarse_res,5,0.0,0.0,3255
+coarse_res,6,17.83,0.117,3070
+coarse_res,7,0.0,0.0,3315
+coarse_res,8,-0.0,-0.0,1270
+ring,1,17.83,0.117,3070
+ring,2,0.0,0.0,3275
+ring,3,0.0,0.0,3350

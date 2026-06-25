@@ -1,0 +1,6 @@
+k_refine,instances,positive_gap,positive_gap_pct,mean_gap_when_positive_pct,max_gap_pct,max_abs_gap_std_min
+1,320,45,14.1,19.49,323.24,1.813
+2,320,23,7.2,24.66,323.24,1.813
+3,320,22,6.9,25.74,323.24,1.813
+5,320,22,6.9,25.74,323.24,1.813
+10,320,22,6.9,25.74,323.24,1.813
