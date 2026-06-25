@@ -1,11 +1,12 @@
 """Real Bengaluru social-meetup numbers: second city of contrasting topology.
 
-Bengaluru is sprawling with sparser, mostly bus-based transit, against London's
-compact, mature multimodal network. Road network from OpenStreetMap (Karnataka extract,
-which contains Bengaluru); transit from the real BMTC bus GTFS plus a synthesized Namma
-Metro GTFS (labelled synthetic). Same pipeline as run_real_london.py: build the r5
-network once, precompute every user's travel time to all candidates, then run our method
-and the baselines as lookups.
+Bengaluru is sprawling with an organic street layout, against London's compact, mature
+multimodal network. Road network from OpenStreetMap (Karnataka extract, which contains
+Bengaluru). This run uses road modes only (driving, cycling, walking) as a deliberate
+scope choice, so the second city isolates the contrast in street topology from London's
+multimodal effects; the BMTC bus GTFS in the repo is not routed here. Same pipeline as
+run_real_london.py: build the r5 network once, precompute every user's travel time to all
+candidates, then run our method and the baselines as lookups.
 
 Run:  python scripts/run_real_bengaluru.py
 Out:  outputs/real_bengaluru.csv, outputs/real_bengaluru_pareto.csv
@@ -41,8 +42,9 @@ from fairmp.scenarios import CITY_BBOX, assign_modes, sample_origins  # noqa: E4
 # Sample groups within Bengaluru's dense urban core rather than the full administrative
 # bbox whose rural fringe is poorly connected.
 CITY_BBOX["bengaluru"] = (12.92, 77.55, 13.02, 77.67)
-# Bengaluru groups use road modes only. No routable open transit feed was available for
-# the city, so the second city isolates the contrast in road-network topology.
+# Bengaluru groups use road modes only, a deliberate scope choice so the second city
+# isolates the contrast in road-network topology from London's multimodal effects. The
+# BMTC bus GTFS is present in the repo but not routed for this run.
 scenarios.MODES = ["driving", "walking", "cycling"]
 from fairmp.sweep import pareto_matched_mean  # noqa: E402
 from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend  # noqa: E402
