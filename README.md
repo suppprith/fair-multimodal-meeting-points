@@ -73,7 +73,8 @@ python scripts/run_real_darkstore.py     # demand-weighted dark-store siting
 python scripts/run_real_adversarial.py   # river-crossing / mode-mismatch / linear stress tests
 ```
 
-Set `N_INSTANCES` to change the number of instances (default 8 for the real runs).
+Set `N_INSTANCES` to change the number of instances (default 100 per city/scenario, the
+count reported in the paper; set e.g. `N_INSTANCES=3` for a quick smoke run).
 
 3. Regenerate the paper tables from the result CSVs:
 

@@ -105,7 +105,7 @@ def main():
     departure = dt.datetime(wed.year, wed.month, wed.day, 8, 30)
     params = Params(coarse_res=8, fine_res=9, k_c=300, k_refine=10, t_max=120.0, gamma=0.0)
 
-    n_instances = int(os.environ.get("N_INSTANCES", "8"))
+    n_instances = int(os.environ.get("N_INSTANCES", "100"))
     rows, pareto_rows = [], []
     for seed in range(n_instances):
         origins = sample_origins("bengaluru", 5, seed=seed, spread="clustered", clusters=1, cluster_sd_deg=0.02)

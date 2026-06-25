@@ -88,7 +88,7 @@ def main():
     departure = dt.datetime(wed.year, wed.month, wed.day, 8, 30)
     params = Params(coarse_res=9, fine_res=10, k_c=400, k_refine=12, t_max=30.0, gamma=0.0)
 
-    n_instances = int(os.environ.get("N_INSTANCES", "3"))
+    n_instances = int(os.environ.get("N_INSTANCES", "100"))
     rows = []
     for seed in range(n_instances):
         riders = sample_origins("london", 5, seed=seed, spread="clustered", clusters=1, cluster_sd_deg=0.012)
