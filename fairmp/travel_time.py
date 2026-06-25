@@ -88,6 +88,42 @@ class R5Backend(Backend):
         )
 
 
+class PerceptionBackend(Backend):
+    """Applies the perception-weighted cost of Eq 2 to schedule-based (transit) trips:
+
+        perceived = t_in + alpha * t_out + delta * n_transfers,
+
+    where t_out is out-of-vehicle time (access, egress, waiting) and n_transfers grows
+    with trip distance. Walking, cycling, and driving pass through unchanged. The clock
+    time of the wrapped backend is split into an out-of-vehicle part and an in-vehicle
+    line-haul, so alpha=1, delta=0 reproduces clock time exactly, the uncalibrated
+    setting used for the headline runs. Sweeping alpha and delta over this wrapper tests
+    whether the method's ranking is stable across the plausible perception range.
+    """
+
+    def __init__(self, base: Backend, alpha: float = 1.0, delta: float = 0.0,
+                 access_min: float = 6.0, wait_min: float = 3.0,
+                 transfer_km: float = 5.0, max_transfers: int = 3):
+        self.base = base
+        self.alpha = alpha
+        self.delta = delta
+        self.access_min = access_min
+        self.wait_min = wait_min
+        self.transfer_km = transfer_km
+        self.max_transfers = max_transfers
+
+    def minutes(self, origin, dest, mode, departure=None):
+        t = self.base.minutes(origin, dest, mode, departure)
+        if mode != "transit" or not math.isfinite(t):
+            return t
+        d = haversine_km(origin, dest)
+        n_tr = min(int(d // self.transfer_km), self.max_transfers)
+        # clamp so the clock split never exceeds the total; keeps alpha=1,delta=0 == t
+        out_clock = min(self.access_min + self.wait_min * n_tr, t)
+        in_clock = t - out_clock
+        return in_clock + self.alpha * out_clock + self.delta * n_tr
+
+
 def cell_key(p: LatLng, res: int = 8) -> str:
     return h3.latlng_to_cell(p.lat, p.lng, res)
 
