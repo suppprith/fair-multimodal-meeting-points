@@ -33,7 +33,7 @@ def _table(rows, colspec, header, caption, label):
     return "\n".join(out)
 
 def fairness_table():
-    g = _grouped(f"{OUT}/real_london.csv", ["variance", "jain", "gini", "ede", "max"])
+    g = _grouped(f"{OUT}/london.csv", ["variance", "jain", "gini", "ede", "max"])
     g = g.drop(index=[m for m in ["exhaustive_ede"] if m in g.index])
     g = g.sort_values("variance")
     rows = [f"{DISPLAY.get(m, m)} & {r.variance:.1f} & {r.jain:.2f} & {r.gini:.2f} & "
@@ -47,7 +47,7 @@ def fairness_table():
         "tab:fairness")
 
 def adversarial_table():
-    df = pd.read_csv(f"{OUT}/real_adversarial.csv")
+    df = pd.read_csv(f"{OUT}/adversarial.csv")
     kinds = [("river", "River-crossing"), ("linear", "Linear arterial"), ("mismatch", "Mode mismatch")]
     rows = []
     for key, name in kinds:
@@ -64,7 +64,7 @@ def adversarial_table():
         "tab:adversarial")
 
 def darkstore_table():
-    g = _grouped(f"{OUT}/real_darkstore.csv", ["w_variance", "courier_gini", "pct_within_sla"])
+    g = _grouped(f"{OUT}/darkstore.csv", ["w_variance", "courier_gini", "pct_within_sla"])
     order = [m for m in ["ours", "ours_ede", "min_sum", "weighted_centroid", "coverage_max"] if m in g.index]
     g = g.reindex(order)
     rows = [f"{DISPLAY.get(m, m)} & {r.w_variance:.1f} & {r.courier_gini:.2f} & {r.pct_within_sla:.0f}"
@@ -77,7 +77,7 @@ def darkstore_table():
         "tab:darkstore")
 
 def rideshare_table():
-    g = _grouped(f"{OUT}/real_rideshare.csv", ["variance", "spread", "max", "jain"])
+    g = _grouped(f"{OUT}/rideshare.csv", ["variance", "spread", "max", "jain"])
     order = [m for m in ["ours", "min_range", "random", "min_max", "centroid", "min_sum"] if m in g.index]
     g = g.reindex(order)
     rows = [f"{DISPLAY.get(m, m)} & {r.variance:.1f} & {r.spread:.1f} & {r['max']:.1f} & {r.jain:.2f}"
@@ -92,10 +92,10 @@ def rideshare_table():
 
 def main():
     builders = [
-        ("real_london.csv", fairness_table),
-        ("real_adversarial.csv", adversarial_table),
-        ("real_darkstore.csv", darkstore_table),
-        ("real_rideshare.csv", rideshare_table),
+        ("london.csv", fairness_table),
+        ("adversarial.csv", adversarial_table),
+        ("darkstore.csv", darkstore_table),
+        ("rideshare.csv", rideshare_table),
     ]
     blocks = []
     for fname, fn in builders:

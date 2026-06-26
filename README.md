@@ -64,14 +64,20 @@ python scripts/run_significance.py   # 30 instances/scenario, 95% CIs + paired W
 1. Fetch the road network and transit feeds (see `scripts/DATA.md`; `scripts/fetch_data.py`
    automates the open, no-auth downloads). Real runs use OpenStreetMap + GTFS via
    [r5py](https://r5py.readthedocs.io/) and need a JDK 21.
-2. Run the real-London experiments (each builds the routing network once):
+2. Run the real-network experiments (each builds the routing network once):
 
 ```
-python scripts/run_real_london.py        # social meetup + gamma/Pareto operating point
-python scripts/run_real_rideshare.py     # ride-share walk-access pickup
-python scripts/run_real_darkstore.py     # demand-weighted dark-store siting
-python scripts/run_real_adversarial.py   # river-crossing / mode-mismatch / linear stress tests
+python scripts/run_london.py        # London social meetup (multimodal) + gamma/Pareto
+python scripts/run_bengaluru.py     # Bengaluru social meetup (road-only)
+python scripts/run_bayarea.py       # San Francisco social meetup (multimodal, BART rail)
+python scripts/run_tokyo.py         # Tokyo social meetup (road-only)
+python scripts/run_rideshare.py     # ride-share walk-access pickup
+python scripts/run_darkstore.py     # demand-weighted dark-store siting
+python scripts/run_adversarial.py   # river-crossing / mode-mismatch / linear stress tests
 ```
+
+The bbbike OSM extracts for San Francisco and Tokyo are re-written and cropped to the
+routable city region with `scripts/crop_bayarea.py` and `scripts/crop_tokyo.py` before use.
 
 Set `N_INSTANCES` to change the number of instances (default 100 per city/scenario, the
 count reported in the paper; set e.g. `N_INSTANCES=3` for a quick smoke run).
@@ -86,13 +92,14 @@ python scripts/make_paper_tables.py      # writes outputs/paper_tables.tex
 
 | File | What it contains |
 | --- | --- |
-| `real_london.csv` | Social meetup, real London multimodal network: every method's variance, Jain, Gini, EDE, mean, max, optimality gap. |
-| `real_london_pareto.csv` | Gamma sweep: the operating point matching min-sum's mean travel time and the variance reduction there. |
-| `real_rideshare.csv` | Ride-share pickup, real walk-access times. |
-| `real_darkstore.csv` | Dark-store siting, real cycling times, demand-weighted metrics (w-variance, courier Gini, within-SLA share, w-EDE). |
-| `real_adversarial.csv` | River-crossing, mode-mismatch, and linear topologies. |
-| `significance.csv`, `significance_tests.csv` | 30-instance synthetic sweep with paired Wilcoxon tests. |
-| `sweep.csv`, `darkstore.csv`, `rideshare.csv` | Euclidean development runs. |
+| `london.csv` | Social meetup, London multimodal network: every method's variance, Jain, Gini, EDE, mean, max, optimality gap. |
+| `london_pareto.csv` | Gamma sweep: the operating point matching min-sum's mean travel time and the variance reduction there. |
+| `bengaluru.csv`, `bayarea.csv`, `tokyo.csv` | Social meetup on the Bengaluru (road-only), San Francisco (multimodal), and Tokyo (road-only) networks, each with a `_pareto` variant. |
+| `rideshare.csv` | Ride-share pickup, walk-access times. |
+| `darkstore.csv` | Dark-store siting, cycling times, demand-weighted metrics (w-variance, courier Gini, within-SLA share, w-EDE). |
+| `adversarial.csv` | River-crossing, mode-mismatch, and linear topologies. |
+| `significance.csv`, `significance_tests.csv` | 100-instance synthetic sweep with paired Wilcoxon tests. |
+| `sweep.csv`, `dev_darkstore.csv`, `dev_rideshare.csv` | Euclidean development runs. |
 | `paper_tables.tex` | LaTeX tables generated from the CSVs above. |
 
 ## Layout

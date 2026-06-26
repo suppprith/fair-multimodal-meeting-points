@@ -24,21 +24,25 @@ from fairmp import baselines
 from fairmp.algorithm import Params
 from fairmp.candidates import polyfill_centroids, region_polygon
 from fairmp.runner import run_instance
-from fairmp.scenarios import assign_modes, sample_origins
+import fairmp.scenarios as scenarios
+from fairmp.scenarios import CITY_BBOX, assign_modes, sample_origins
+
+CITY_BBOX["bengaluru"] = (12.92, 77.55, 13.02, 77.67)
+
+scenarios.MODES = ["driving", "walking", "cycling"]
 from fairmp.sweep import pareto_matched_mean
 from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend
 
-OSM = os.path.join(ROOT, "data", "london", "network.osm.pbf")
-GTFS = [os.path.join(ROOT, "data", "london", "gtfs", "london_bus.zip")]
+OSM = os.path.join(ROOT, "data", "bengaluru", "blr_city.osm.pbf")
+
+GTFS = []
 
 def candidates_for(origins, modes, coarse, fine):
     region = region_polygon(origins)
     pts = {}
-    for _c, p in polyfill_centroids(region, coarse):
-        pts[(round(p.lat, 6), round(p.lng, 6))] = p
-    for _c, p in polyfill_centroids(region, fine):
-        pts[(round(p.lat, 6), round(p.lng, 6))] = p
-
+    for res in (coarse, fine):
+        for _c, p in polyfill_centroids(region, res):
+            pts[(round(p.lat, 6), round(p.lng, 6))] = p
     for bp in (baselines.geometric_centroid(origins, modes),
                baselines.weighted_centroid(origins, modes),
                baselines.geometric_median(origins, modes)):
@@ -74,22 +78,18 @@ def precompute(r5, origins, modes, cands, departure):
     return pre
 
 def main():
-    print("loading London network (cached .dat if present)...")
+    print("loading Bengaluru network (Karnataka OSM + BMTC + synthetic metro)...")
     r5 = R5Backend(OSM, GTFS)
     print("network ready")
     today = dt.date.today()
     wed = today + dt.timedelta((2 - today.weekday()) % 7 + 7)
-
-    hour = int(os.environ.get("DEPARTURE_HOUR", "8"))
-    minute = int(os.environ.get("DEPARTURE_MIN", "30"))
-    departure = dt.datetime(wed.year, wed.month, wed.day, hour, minute)
-    tag = os.environ.get("OUT_TAG", "")
+    departure = dt.datetime(wed.year, wed.month, wed.day, 8, 30)
     params = Params(coarse_res=8, fine_res=9, k_c=300, k_refine=10, t_max=120.0, gamma=0.0)
 
     n_instances = int(os.environ.get("N_INSTANCES", "100"))
     rows, pareto_rows = [], []
     for seed in range(n_instances):
-        origins = sample_origins("london", 5, seed=seed, spread="clustered", clusters=1, cluster_sd_deg=0.03)
+        origins = sample_origins("bengaluru", 5, seed=seed, spread="clustered", clusters=1, cluster_sd_deg=0.02)
         modes = assign_modes(5, "mixed", seed=seed)
         cands = candidates_for(origins, modes, 8, 9)
         print(f"seed {seed}: {len(cands)} candidates, modes {[m[0] for m in modes]} -> r5 matrices...")
@@ -97,7 +97,6 @@ def main():
         for r in run_instance(origins, modes, pre, params, fine_res=9, variants=("ede",)):
             r.update(seed=seed)
             rows.append(r)
-
         _front, ref, op = pareto_matched_mean(origins, modes, pre, base_params=params, fine_res=9)
         if op is not None:
             pareto_rows.append({"seed": seed, "minsum_mean": ref["mean"], "minsum_variance": ref["variance"],
@@ -107,18 +106,15 @@ def main():
 
     df = pd.DataFrame(rows)
     os.makedirs("outputs", exist_ok=True)
-    df.to_csv(f"outputs/real_london{tag}.csv", index=False)
-    cols = ["variance", "jain", "gini", "theil", "ede", "mean", "max", "feasible", "opt_gap"]
-    cols = [c for c in cols if c in df.columns]
-    print(f"\nREAL London social meetup (departure {hour:02d}:{minute:02d}, mean over instances):")
+    df.to_csv("outputs/bengaluru.csv", index=False)
+    cols = [c for c in ["variance", "jain", "gini", "ede", "mean", "max", "feasible", "opt_gap"] if c in df.columns]
+    print("\nREAL Bengaluru social meetup (mean over instances):")
     print(df.groupby("method")[cols].mean(numeric_only=True).round(3).sort_values("variance").to_string())
 
     if pareto_rows:
         pdf = pd.DataFrame(pareto_rows)
-        pdf.to_csv(f"outputs/real_london_pareto{tag}.csv", index=False)
-        print("\nPareto matched-mean (<=5% mean budget vs min-sum):")
-        print(pdf.round(2).to_string(index=False))
-        print(f"mean variance reduction at matched mean: {pdf['variance_reduction_pct'].mean():.0f}%")
+        pdf.to_csv("outputs/bengaluru_pareto.csv", index=False)
+        print(f"\nPareto matched-mean: mean variance reduction {pdf['variance_reduction_pct'].mean():.0f}%")
 
 if __name__ == "__main__":
     main()

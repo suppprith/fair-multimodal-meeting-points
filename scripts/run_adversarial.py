@@ -118,7 +118,7 @@ def main():
 
     df = pd.DataFrame(rows)
     os.makedirs("outputs", exist_ok=True)
-    df.to_csv("outputs/real_adversarial.csv", index=False)
+    df.to_csv("outputs/adversarial.csv", index=False)
 
     print("\nREAL London adversarial topologies (mean over instances):")
     for kind in ("river", "mismatch", "linear"):

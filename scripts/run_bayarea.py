@@ -23,16 +23,14 @@ from fairmp import baselines
 from fairmp.algorithm import Params
 from fairmp.candidates import polyfill_centroids, region_polygon
 from fairmp.runner import run_instance
-import fairmp.scenarios as scenarios
 from fairmp.scenarios import CITY_BBOX, assign_modes, sample_origins
 from fairmp.sweep import pareto_matched_mean
 from fairmp.travel_time import R5_MODE, PrecomputedBackend, R5Backend
 
-CITY_BBOX["tokyo"] = (35.62, 139.68, 35.74, 139.82)
-scenarios.MODES = ["driving", "walking", "cycling"]
+CITY_BBOX["bayarea"] = (37.73, -122.51, 37.81, -122.39)
 
-OSM = os.path.join(ROOT, "data", "tokyo", "tokyo_city.osm.pbf")
-GTFS = []
+OSM = os.path.join(ROOT, "data", "bayarea", "sf_city.osm.pbf")
+GTFS = [os.path.join(ROOT, "data", "bayarea", "gtfs", "bart.zip")]
 
 
 def candidates_for(origins, modes, coarse, fine):
@@ -78,7 +76,7 @@ def precompute(r5, origins, modes, cands, departure):
 
 
 def main():
-    print("loading Tokyo network (OSM, road modes only)...")
+    print("loading Bay Area network (OSM + BART rail GTFS)...")
     r5 = R5Backend(OSM, GTFS)
     print("network ready")
     today = dt.date.today()
@@ -89,7 +87,7 @@ def main():
     n_instances = int(os.environ.get("N_INSTANCES", "100"))
     rows, pareto_rows = [], []
     for seed in range(n_instances):
-        origins = sample_origins("tokyo", 5, seed=seed, spread="clustered", clusters=1, cluster_sd_deg=0.02)
+        origins = sample_origins("bayarea", 5, seed=seed, spread="clustered", clusters=1, cluster_sd_deg=0.03)
         modes = assign_modes(5, "mixed", seed=seed)
         cands = candidates_for(origins, modes, 8, 9)
         print(f"seed {seed}: {len(cands)} candidates, modes {[m[0] for m in modes]} -> r5 matrices...")
@@ -106,14 +104,14 @@ def main():
 
     df = pd.DataFrame(rows)
     os.makedirs("outputs", exist_ok=True)
-    df.to_csv("outputs/real_tokyo.csv", index=False)
+    df.to_csv("outputs/bayarea.csv", index=False)
     cols = [c for c in ["variance", "jain", "gini", "ede", "mean", "max", "feasible", "opt_gap"] if c in df.columns]
-    print("\nREAL Tokyo social meetup (road-only, mean over instances):")
+    print("\nREAL Bay Area social meetup (mean over instances):")
     print(df.groupby("method")[cols].mean(numeric_only=True).round(3).sort_values("variance").to_string())
 
     if pareto_rows:
         pdf = pd.DataFrame(pareto_rows)
-        pdf.to_csv("outputs/real_tokyo_pareto.csv", index=False)
+        pdf.to_csv("outputs/bayarea_pareto.csv", index=False)
         print(f"\nPareto matched-mean: mean variance reduction {pdf['variance_reduction_pct'].mean():.0f}%")
 
 
