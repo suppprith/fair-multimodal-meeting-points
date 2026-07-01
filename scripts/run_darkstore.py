@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import gc
 import glob
 import os
 import sys
@@ -78,22 +79,32 @@ def main():
     use_worldpop = bool(os.environ.get("WORLDPOP"))
     wp_raster = os.path.join(ROOT, "data", "london", "worldpop_gbr.tif")
     wp_bbox = (51.48, -0.16, 51.54, -0.06)
-    rows = []
+    os.makedirs("outputs", exist_ok=True)
+    out_path = "outputs/darkstore.csv"
+    rows, done = [], set()
+    if os.path.exists(out_path):
+        prev = pd.read_csv(out_path)
+        rows = prev.to_dict("records")
+        done = set(prev["seed"].unique())
+        print(f"resuming: {len(done)} seeds already done", flush=True)
     for seed in range(n_instances):
+        if seed in done:
+            continue
         if use_worldpop:
             demand, weights = darkstore.sample_demand_worldpop(wp_raster, wp_bbox, n_cells, seed=seed)
         else:
             demand, weights = darkstore.sample_demand("london", n_cells, seed=seed)
         cands = candidates_for(demand, weights, 8, 9)
-        print(f"seed {seed}: {len(cands)} candidates, r5 cycling matrix...")
+        print(f"seed {seed}: {len(cands)} candidates, r5 cycling matrix...", flush=True)
         pre = precompute(r5, demand, "cycling", cands, departure)
         for r in darkstore.run_darkstore_instance(demand, weights, pre, params, sla, courier=COURIER):
             r.update(seed=seed)
             rows.append(r)
+        pd.DataFrame(rows).to_csv("outputs/darkstore.csv", index=False)
+        del pre
+        gc.collect()
 
     df = pd.DataFrame(rows)
-    os.makedirs("outputs", exist_ok=True)
-    df.to_csv("outputs/darkstore.csv", index=False)
     cols = ["w_variance", "w_ede", "p90", "pct_within_sla", "courier_gini", "max"]
     print("\nREAL London dark-store siting (real cycling times, synthetic demand; SLA 10 min):")
     print(df.groupby("method")[cols].mean(numeric_only=True).round(2).sort_values("w_variance").to_string())
