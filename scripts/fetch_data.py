@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -47,12 +48,17 @@ def fetch(rel: str, url: str):
     print("        ", round(os.path.getsize(dest) / 1e6, 1), "MB")
 
 def main():
-    for rel, url in AUTO:
+    only = None
+    if "--only" in sys.argv:
+        only = sys.argv[sys.argv.index("--only") + 1]
+    items = [(rel, url) for rel, url in AUTO if only is None or rel.startswith(only + "/")]
+    for rel, url in items:
         try:
             fetch(rel, url)
         except Exception as e:
             print("FAILED  ", rel, "->", e)
-    print(MANUAL)
+    if only is None:
+        print(MANUAL)
 
 if __name__ == "__main__":
     main()

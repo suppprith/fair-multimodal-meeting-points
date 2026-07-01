@@ -1,0 +1,107 @@
+name: experiments
+
+# Heavy r5py runs offloaded from an 8 GB laptop to 16 GB GitHub runners.
+# Trigger manually: first with n_instances=3, commit_results=false to smoke the
+# pipeline, then n_instances=100, commit_results=true for the reported numbers.
+
+on:
+  workflow_dispatch:
+    inputs:
+      n_instances:
+        description: Instances per experiment
+        default: "100"
+        type: string
+      commit_results:
+        description: Commit result CSVs back to main
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  darkstore-london:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: pip install -r requirements.txt
+      - name: Fetch London network + GTFS
+        run: python scripts/fetch_data.py --only london
+      - name: Dark-store siting (London, cycling)
+        env:
+          N_INSTANCES: ${{ inputs.n_instances }}
+          JAVA_TOOL_OPTIONS: -Xmx8g
+        run: |
+          rm -f outputs/darkstore.csv
+          python scripts/run_darkstore.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: darkstore
+          path: outputs/darkstore.csv
+
+  rideshare-sf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: pip install -r requirements.txt osmium
+      - name: Fetch San Francisco network
+        run: python scripts/fetch_data.py --only bayarea
+      - name: Crop to the SF city extent
+        run: python scripts/crop_bayarea.py
+      - name: Ride-share pickup (San Francisco, walk access)
+        env:
+          N_INSTANCES: ${{ inputs.n_instances }}
+          JAVA_TOOL_OPTIONS: -Xmx8g
+        run: |
+          rm -f outputs/rideshare_sf.csv
+          python scripts/run_rideshare_sf.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rideshare_sf
+          path: outputs/rideshare_sf.csv
+
+  commit-results:
+    needs: [darkstore-london, rideshare-sf]
+    if: ${{ inputs.commit_results }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+      - name: Stage result CSVs
+        run: |
+          cp _artifacts/darkstore/darkstore.csv outputs/darkstore.csv
+          cp _artifacts/rideshare_sf/rideshare_sf.csv outputs/rideshare_sf.csv
+          rm -rf _artifacts
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add outputs/darkstore.csv outputs/rideshare_sf.csv
+          if git diff --cached --quiet; then
+            echo "no result changes to commit"
+          else
+            git commit -m "Add ${{ inputs.n_instances }}-instance dark-store (London) and ride-share (San Francisco) results"
+            git push
+          fi

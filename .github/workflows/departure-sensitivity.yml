@@ -1,0 +1,67 @@
+name: departure-sensitivity
+
+# Staggered-departure characterization on the London network: how far the
+# single-departure-snapshot optimum sits from the staggered-aware optimum.
+
+on:
+  workflow_dispatch:
+    inputs:
+      n_instances:
+        description: London instances
+        default: "30"
+        type: string
+      window_min:
+        description: Departure spread window (minutes)
+        default: "60"
+        type: string
+      commit_results:
+        description: Commit result CSV back to main
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  departure-sensitivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: pip install -r requirements.txt
+      - name: Fetch London network + GTFS
+        run: python scripts/fetch_data.py --only london
+      - name: Staggered-departure sensitivity
+        env:
+          N_INSTANCES: ${{ inputs.n_instances }}
+          STAGGER_WINDOW_MIN: ${{ inputs.window_min }}
+          JAVA_TOOL_OPTIONS: -Xmx8g
+        run: |
+          rm -f outputs/departure_sensitivity.csv
+          python scripts/run_departure_sensitivity.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: departure_sensitivity
+          path: outputs/departure_sensitivity.csv
+      - name: Commit and push
+        if: ${{ inputs.commit_results }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add outputs/departure_sensitivity.csv
+          if git diff --cached --quiet; then
+            echo "no result changes to commit"
+          else
+            git commit -m "Add staggered-departure sensitivity results (London)"
+            git push
+          fi
