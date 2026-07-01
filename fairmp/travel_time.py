@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 import glob
-import json
 import math
 import os
-import time as _time
-import urllib.error
-import urllib.parse
-import urllib.request
 from abc import ABC, abstractmethod
 
 import h3
@@ -90,60 +85,6 @@ class PerceptionBackend(Backend):
         out_clock = min(self.access_min + self.wait_min * n_tr, t)
         in_clock = t - out_clock
         return in_clock + self.alpha * out_clock + self.delta * n_tr
-
-
-TFL_MODE = {
-    "walking": "walking",
-    "cycling": "cycling",
-    "driving": "driving",
-    "transit": "tube,bus,national-rail,dlr,overground,elizabeth-line,tram,river-bus",
-}
-
-
-class TflBackend(Backend):
-    def __init__(self, app_key: str | None = None, retries: int = 3,
-                 timeout: float = 20.0, backoff: float = 2.0, pause: float = 0.12,
-                 user_agent: str = "Mozilla/5.0 (X11; Linux x86_64) fairmp-research/1.0"):
-        self.app_key = app_key or os.environ.get("TFL_APP_KEY")
-        self.retries = retries
-        self.timeout = timeout
-        self.backoff = backoff
-        self.pause = pause
-        self.user_agent = user_agent
-
-    def minutes(self, origin, dest, mode, departure=None):
-        tfl_mode = TFL_MODE.get(mode)
-        if not tfl_mode:
-            return math.inf
-        params = {"mode": tfl_mode}
-        if self.app_key:
-            params["app_key"] = self.app_key
-        if departure is not None:
-            params["date"] = departure.strftime("%Y%m%d")
-            params["time"] = departure.strftime("%H%M")
-            params["timeIs"] = "Departing"
-        url = (f"https://api.tfl.gov.uk/Journey/JourneyResults/"
-               f"{origin.lat},{origin.lng}/to/{dest.lat},{dest.lng}?"
-               + urllib.parse.urlencode(params))
-        req = urllib.request.Request(url, headers={"User-Agent": self.user_agent})
-        for attempt in range(self.retries):
-            try:
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                    data = json.load(resp)
-                journeys = data.get("journeys") or []
-                if self.pause:
-                    _time.sleep(self.pause)
-                if not journeys:
-                    return math.inf
-                return float(min(j["duration"] for j in journeys))
-            except urllib.error.HTTPError as e:
-                if e.code == 429:
-                    _time.sleep(self.backoff * (attempt + 1))
-                    continue
-                return math.inf
-            except Exception:
-                _time.sleep(self.backoff)
-        return math.inf
 
 
 def cell_key(p: LatLng, res: int = 8) -> str:
