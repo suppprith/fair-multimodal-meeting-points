@@ -102,12 +102,14 @@ TFL_MODE = {
 
 class TflBackend(Backend):
     def __init__(self, app_key: str | None = None, retries: int = 3,
-                 timeout: float = 20.0, backoff: float = 2.0, pause: float = 0.12):
+                 timeout: float = 20.0, backoff: float = 2.0, pause: float = 0.12,
+                 user_agent: str = "Mozilla/5.0 (X11; Linux x86_64) fairmp-research/1.0"):
         self.app_key = app_key or os.environ.get("TFL_APP_KEY")
         self.retries = retries
         self.timeout = timeout
         self.backoff = backoff
         self.pause = pause
+        self.user_agent = user_agent
 
     def minutes(self, origin, dest, mode, departure=None):
         tfl_mode = TFL_MODE.get(mode)
@@ -123,9 +125,10 @@ class TflBackend(Backend):
         url = (f"https://api.tfl.gov.uk/Journey/JourneyResults/"
                f"{origin.lat},{origin.lng}/to/{dest.lat},{dest.lng}?"
                + urllib.parse.urlencode(params))
+        req = urllib.request.Request(url, headers={"User-Agent": self.user_agent})
         for attempt in range(self.retries):
             try:
-                with urllib.request.urlopen(url, timeout=self.timeout) as resp:
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                     data = json.load(resp)
                 journeys = data.get("journeys") or []
                 if self.pause:
